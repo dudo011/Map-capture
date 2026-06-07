@@ -5042,14 +5042,23 @@ async function handleManualSave() {
 async function handleManualPrev() {
     if (curManualIdx > 0) {
         curManualIdx--;
-        await loadManualBuilding(curManualIdx);
+        if (isIndividualManualMode) {
+            await loadManualAddress(curManualIdx);
+        } else {
+            await loadManualBuilding(curManualIdx);
+        }
     }
 }
 
 async function handleManualNext() {
-    if (curManualIdx < buildingQueue.length - 1) {
+    const totalCount = isIndividualManualMode ? individualAddressQueue.length : buildingQueue.length;
+    if (curManualIdx < totalCount - 1) {
         curManualIdx++;
-        await loadManualBuilding(curManualIdx);
+        if (isIndividualManualMode) {
+            await loadManualAddress(curManualIdx);
+        } else {
+            await loadManualBuilding(curManualIdx);
+        }
     }
 }
 
@@ -5200,9 +5209,134 @@ async function saveAndCaptureCurrentCombined() {
     }
 }
 
+let currentPreviewAddrCoords = null;
+
+async function loadManualAddress(idx) {
+    if (idx < 0 || idx >= individualAddressQueue.length) return;
+    const mySessionId = ++activeLoadSessionId;
+    curIdx = idx;
+    const item = individualAddressQueue[idx];
+    const bKey = item.bKey;
+    const addr = item.addr;
+    
+    const idx_sep = bKey.indexOf('_');
+    const bNo = idx_sep !== -1 ? bKey.substring(idx_sep + 1) : bKey;
+    currentPreviewAddr = addr;
+    
+    document.getElementById('manual-bno').textContent = `건물번호: ${bNo} (${idx + 1}/${individualAddressQueue.length})`;
+    
+    // 순번 입력 창 동기화
+    const inputJump = document.getElementById('input-manual-jump');
+    if (inputJump) {
+        inputJump.value = idx + 1;
+    }
+    
+    document.getElementById('manual-addr').textContent = addr;
+    
+    document.getElementById('sb-bno').textContent = bNo;
+    document.getElementById('sb-addr').textContent = addr;
+    
+    clearOverlays();
+    cachedGeometries = [];
+    
+    let hasGeom = false;
+    let groupCoords = [];
+    
+    // Auto load regional offset
+    let matchedOffset = null;
+    if (addressOffsets[addr]) {
+        matchedOffset = { x: addressOffsets[addr].x, y: addressOffsets[addr].y };
+    }
+    if (!matchedOffset) {
+        try {
+            const tempCoords = await geocodeAddress(addr);
+            const closest = findClosestCalibratedOffset(tempCoords.lon, tempCoords.lat);
+            if (closest) {
+                matchedOffset = closest.offset;
+            }
+        } catch(e) {}
+    }
+    if (!matchedOffset) {
+        const region = getRegionPrefix(addr);
+        const regOffsets = getRegionalOffsets();
+        if (regOffsets[region]) {
+            matchedOffset = { x: regOffsets[region].x, y: regOffsets[region].y };
+        }
+    }
+    if (!matchedOffset) {
+        matchedOffset = { x: 0, y: 14 };
+    }
+    
+    offsetX = matchedOffset.x;
+    offsetY = matchedOffset.y;
+    
+    try {
+        const coords = await geocodeAddress(addr);
+        if (mySessionId !== activeLoadSessionId) return;
+        currentPreviewAddrCoords = coords;
+        const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
+        if (mySessionId !== activeLoadSessionId) return;
+        const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
+        saveParcelCache(addr, metadata);
+        groupCoords.push({ addr, lon: coords.lon, lat: coords.lat, area: metadata.area || 0 });
+        (features || []).forEach(f => {
+            if (f.geometry) {
+                cachedGeometries.push(f.geometry);
+                hasGeom = true;
+            }
+        });
+    } catch(e) {
+        showLog(`오류 (${addr}): ${e.message}`, 'warn');
+    }
+    
+    if (mySessionId !== activeLoadSessionId) return;
+    
+    document.getElementById('manual-calibration-panel')._groupCoords = groupCoords;
+    document.getElementById('off-x').value = offsetX;
+    document.getElementById('off-y').value = offsetY;
+    updateManualOffsetsDisplay();
+    
+    updateRegionDisplay();
+    redrawCached();
+    
+    if (mySessionId !== activeLoadSessionId) return;
+
+    // Set map label
+    const basePrefix = bKey;
+    const labelEl = document.getElementById('map-label');
+    const labelLines = splitAddress(addr);
+    labelEl.style.display = 'block';
+    labelEl.innerHTML = `
+        <div style="font-size: 14px; color: var(--accent); margin-bottom: 4px;">${basePrefix}</div>
+        <div style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;">${labelLines[0]}</div>
+        <div style="font-size: 16px; font-weight: bold; color: #ffffff;">${labelLines[1]}</div>
+    `;
+
+    if (cachedGeometries.length > 0) {
+        await centerOnGeometriesAndWait(individualZoom);
+    } else if (groupCoords.length > 0) {
+        const center = new naver.maps.LatLng(
+            groupCoords[0].lat + offsetY * 0.00001,
+            groupCoords[0].lon + offsetX * 0.00001
+        );
+        naverMap.setCenter(center);
+        naverMap.setZoom(individualZoom);
+    }
+}
+
 async function startManualIndividualCalibration() {
     isIndividualManualMode = true;
     manualModeActive = true;
+    
+    // Build individual address queue
+    individualAddressQueue = [];
+    buildingQueue.forEach((bKey) => {
+        const addrs = buildingGroups[bKey] || [];
+        addrs.forEach((addr) => {
+            individualAddressQueue.push({ bKey: bKey, addr: addr });
+        });
+    });
+    
     const urlParams = new URLSearchParams(window.location.search);
     const startIdx = parseInt(urlParams.get('startIdx') || '0') || 0;
     curManualIdx = startIdx;
@@ -5226,9 +5360,9 @@ async function startManualIndividualCalibration() {
     if (inputJump) {
         inputJump.onchange = async () => {
             const val = parseInt(inputJump.value) || 1;
-            const targetIdx = Math.max(0, Math.min(buildingQueue.length - 1, val - 1));
+            const targetIdx = Math.max(0, Math.min(individualAddressQueue.length - 1, val - 1));
             curManualIdx = targetIdx;
-            await loadManualBuilding(curManualIdx);
+            await loadManualAddress(curManualIdx);
         };
         inputJump.onkeydown = async (e) => {
             if (e.key === 'Enter') {
@@ -5239,7 +5373,7 @@ async function startManualIndividualCalibration() {
     }
     
     window.addEventListener('keydown', handleManualKeyDown, true);
-    await loadManualBuilding(curManualIdx);
+    await loadManualAddress(curManualIdx);
 }
 
 async function handleIndividualManualSave() {
@@ -5255,31 +5389,34 @@ async function handleIndividualManualSave() {
     await sleep(50);
 
     try {
-        const bKey = buildingQueue[curManualIdx];
-        const groupCoords = document.getElementById('manual-calibration-panel')._groupCoords || [];
-        for (const item of groupCoords) {
-            await saveAddressOffset(item.addr, offsetX, offsetY, item.lon, item.lat);
-        }
+        const item = individualAddressQueue[curManualIdx];
+        const bKey = item.bKey;
+        const addr = item.addr;
         
-        // Capture all individual maps for this building
-        const ok = await processBuildingIndividual(bKey);
+        // Save offset for this address
+        await saveAddressOffset(addr, offsetX, offsetY, currentPreviewAddrCoords?.lon || 0, currentPreviewAddrCoords?.lat || 0);
+        
+        // Capture map
+        const cleanAddrFilename = addr.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_-]/g, '');
+        const filename = `${bKey}_${cleanAddrFilename}.png`;
+        const ok = await captureMap(filename);
         
         if (ok) {
-            showLog(`✓ [수동 보정 완료] 건물 ${bKey} 개별지도 캡처 완료`, 'success');
+            showLog(`✓ [수동 보정 완료] ${addr} 개별지도 캡처 완료`, 'success');
             doneCount++;
         } else {
-            showLog(`✗ 건물 ${bKey} 개별지도 캡처 실패`, 'error');
+            showLog(`✗ ${addr} 개별지도 캡처 실패`, 'error');
             failCount++;
         }
         updateStats();
-        setBadge(bKey, ok ? 'done' : 'error');
+        setBadge(bKey, 'done');
         
         curManualIdx++;
-        if (curManualIdx < buildingQueue.length) {
-            await loadManualBuilding(curManualIdx);
+        if (curManualIdx < individualAddressQueue.length) {
+            await loadManualAddress(curManualIdx);
         } else {
             window.removeEventListener('keydown', handleManualKeyDown, true);
-            alert('모든 건물의 수동 보정 및 개별지도 저장이 완료되었습니다!');
+            alert('모든 주소의 수동 보정 및 개별지도 저장이 완료되었습니다!');
             window.close();
         }
     } catch(err) {
@@ -5321,9 +5458,9 @@ async function runIndividualManualBatch() {
     showLog("⚡ 개별지도 일괄 자동 저장을 시작합니다.", "info");
     
     try {
-        while (curManualIdx < buildingQueue.length && individualManualBatchRunning) {
+        while (curManualIdx < individualAddressQueue.length && individualManualBatchRunning) {
             // Load the building at current index
-            await loadManualBuilding(curManualIdx);
+            await loadManualAddress(curManualIdx);
             
             // Wait for boundary lines to render
             const delayMs = parseInt(localStorage.getItem('delay') || '1500') || 1500;
@@ -5346,13 +5483,13 @@ async function runIndividualManualBatch() {
             btnBatch.classList.add('bs');
         }
         
-        if (curManualIdx >= buildingQueue.length) {
-            showLog("⚡ 모든 건물의 일괄 자동 저장이 완료되었습니다!", "success");
-            alert('모든 건물의 수동 보정 및 개별지도 저장이 완료되었습니다!');
+        if (curManualIdx >= individualAddressQueue.length) {
+            showLog("⚡ 모든 주소의 일괄 자동 저장이 완료되었습니다!", "success");
+            alert('모든 주소의 수동 보정 및 개별지도 저장이 완료되었습니다!');
             window.close();
         } else {
             // Reload the current building so the user can continue manually
-            await loadManualBuilding(curManualIdx);
+            await loadManualAddress(curManualIdx);
         }
     }
 }
@@ -5370,23 +5507,27 @@ async function saveAndCaptureCurrentIndividual() {
     await sleep(50); // 오버레이가 렌더링되도록 50ms 대기
 
     try {
-        const bKey = buildingQueue[curManualIdx];
-        const groupCoords = document.getElementById('manual-calibration-panel')._groupCoords || [];
-        for (const item of groupCoords) {
-            await saveAddressOffset(item.addr, offsetX, offsetY, item.lon, item.lat);
-        }
+        const item = individualAddressQueue[curManualIdx];
+        const bKey = item.bKey;
+        const addr = item.addr;
         
-        // Capture all individual maps for this building
-        const ok = await processBuildingIndividual(bKey);
+        // Save offset
+        await saveAddressOffset(addr, offsetX, offsetY, currentPreviewAddrCoords?.lon || 0, currentPreviewAddrCoords?.lat || 0);
+        
+        // Capture map
+        const cleanAddrFilename = addr.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_-]/g, '');
+        const filename = `${bKey}_${cleanAddrFilename}.png`;
+        const ok = await captureMap(filename);
+        
         if (ok) {
-            showLog(`✓ [일괄저장 완료] 건물 ${bKey} 개별지도 캡처 완료`, 'success');
+            showLog(`✓ [일괄저장 완료] ${addr} 개별지도 캡처 완료`, 'success');
             doneCount++;
         } else {
-            showLog(`✗ 건물 ${bKey} 개별지도 캡처 실패`, 'error');
+            showLog(`✗ ${addr} 캡처 실패`, 'error');
             failCount++;
         }
         updateStats();
-        setBadge(bKey, ok ? 'done' : 'error');
+        setBadge(bKey, 'done');
         return ok;
     } catch(err) {
         showLog(`저장 중 오류 발생: ${err.message}`, 'error');
