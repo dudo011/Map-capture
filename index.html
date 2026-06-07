@@ -6401,38 +6401,75 @@ async function convertImagesToPDF() {
 
             if (imgs.length === 0) continue;
 
-            const canvas = document.createElement('canvas');
-            const maxW = Math.max(...imgs.map(img => img.width));
             const maxH = Math.max(...imgs.map(img => img.height));
-            
-            // 2cm is roughly 80 pixels on standard screen, or we can scale it relative to resolution (7% of max height)
             const gapHeight = Math.round(maxH * 0.07) || 80;
-            const totalH = imgs.reduce((sum, img) => sum + img.height, 0) + (imgs.length - 1) * gapHeight;
+
+            // 6. Group images into pages (max 15,000 pixels total height per page or max 7 images per page)
+            const pages = [];
+            let currentPageImgs = [];
+            let currentPageH = 0;
+            const maxPageHeight = 15000;
+            const maxImagesPerPage = 7;
             
-            canvas.width = maxW;
-            canvas.height = totalH;
-
-            const ctx = canvas.getContext('2d');
-            // Fill background with white to make the blank gap clean
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            let currentY = 0;
-            for (let idx = 0; idx < imgs.length; idx++) {
-                const img = imgs[idx];
-                const xOffset = Math.max(0, Math.round((maxW - img.width) / 2));
-                ctx.drawImage(img, xOffset, currentY);
-                currentY += img.height + (idx < imgs.length - 1 ? gapHeight : 0);
+            for (const img of imgs) {
+                const neededH = img.height + (currentPageImgs.length > 0 ? gapHeight : 0);
+                const countExceeded = currentPageImgs.length >= maxImagesPerPage;
+                const heightExceeded = (currentPageH + neededH) > maxPageHeight;
+                
+                if (currentPageImgs.length > 0 && (countExceeded || heightExceeded)) {
+                    pages.push(currentPageImgs);
+                    currentPageImgs = [img];
+                    currentPageH = img.height;
+                } else {
+                    currentPageImgs.push(img);
+                    currentPageH += neededH;
+                }
+            }
+            if (currentPageImgs.length > 0) {
+                pages.push(currentPageImgs);
             }
 
-            // 6. Generate PDF and save
+            // 7. Generate PDF by rendering each page
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({
-                orientation: canvas.width > canvas.height ? 'l' : 'p',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
-            });
-            pdf.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', 0, 0, canvas.width, canvas.height);
+            let pdf = null;
+            
+            for (let pageIdx = 0; pageIdx < pages.length; pageIdx++) {
+                const pageImgs = pages[pageIdx];
+                const canvas = document.createElement('canvas');
+                const maxW = Math.max(...pageImgs.map(img => img.width));
+                const totalH = pageImgs.reduce((sum, img) => sum + img.height, 0) + (pageImgs.length - 1) * gapHeight;
+                
+                canvas.width = maxW;
+                canvas.height = totalH;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                let currentY = 0;
+                for (let idx = 0; idx < pageImgs.length; idx++) {
+                    const img = pageImgs[idx];
+                    const xOffset = Math.max(0, Math.round((maxW - img.width) / 2));
+                    ctx.drawImage(img, xOffset, currentY);
+                    currentY += img.height + (idx < pageImgs.length - 1 ? gapHeight : 0);
+                }
+                
+                const orientation = canvas.width > canvas.height ? 'l' : 'p';
+                
+                if (pageIdx === 0) {
+                    pdf = new jsPDF({
+                        orientation: orientation,
+                        unit: 'px',
+                        format: [canvas.width, canvas.height]
+                    });
+                } else {
+                    pdf.addPage([canvas.width, canvas.height], orientation);
+                }
+                
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', 0, 0, canvas.width, canvas.height);
+            }
+
+            if (!pdf) continue;
 
             const pdfFilename = `${basePrefix}.pdf`;
             let savedDirectly = false;
@@ -6454,7 +6491,7 @@ async function convertImagesToPDF() {
                 pdf.save(pdfFilename);
             }
 
-            showLog(`✓ PDF 변환 완료: ${pdfFilename}`, 'success');
+            showLog(`✓ PDF 변환 완료: ${pdfFilename} (${pages.length}페이지)`, 'success');
             pdfCount++;
         }
 
