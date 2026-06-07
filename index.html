@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <style>
 :root {
     --bg: #05070f;
@@ -249,7 +250,7 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <button class="btn bs" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">통합<br>지도</button>
             <button class="btn bp" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">개별<br>지도</button>
             <button class="btn bs" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">PDF<br>변환</button>
-            <button class="btn bp" id="btn-git-sync-main" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">클라우드<br>동기화</button>
+            <button class="btn bp" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">PDF<br>통합</button>
         </div>
     </div>
 </div>
@@ -6846,7 +6847,7 @@ async function checkPermissionAndRun(runMode) {
                         <li><strong>경계선 미세 조정</strong> : 통합지도 버튼을 눌렀을 때, 위성 지도의 건물 지붕과 지적도 경계선이 딱 맞지 않을 경우, 키보드 방향키 (<code>↑</code>, <code>↓</code>, <code>←</code>, <code>→</code>)를 눌러 경계선을 미세 조정한 후 저장 버튼을 누릅니다.</li>
                     </ul>
                 </li>
-                <li style="margin-top: 10px;"><strong>작업 완료 후 클라우드 동기화</strong> : 모든 수동 보정 작업이 완료되면, 메인 화면 우측 상단의 <strong>'클라우드 동기화'</strong> 버튼을 클릭하여 보정값들을 반드시 클라우드(GitHub)에 업로드해 주십시오. 그래야 작업 내역이 원격 저장소에 최종 병합 및 동기화됩니다.</li>
+                <li style="margin-top: 10px;"><strong>클라우드 양방향 자동 동기화</strong> : 최초 실행 및 작업 완료 시점에 오프셋 보정값이 클라우드(GitHub) 및 로컬 HTML 소스코드에 완전히 실시간 양방향으로 자동 병합 및 백업됩니다. 수동 동기화 조작이 불필요합니다.</li>
             </ul>
         </div>
         
@@ -6869,13 +6870,13 @@ async function checkPermissionAndRun(runMode) {
         <ol>
             <li>통합지도 생성 시 저장된 경계선 보정값을 사용해 일괄적으로 업로드한 주소의 개별 지번을 검색하고 위성지도를 저장합니다.</li>
             <li>줌레벨은 환경 설정 시 지정한 줌레벨로 자동 설정되어 캡처됩니다.</li>
-            <li><code>[🔄 클라우드 동기화]</code> 버튼을 누르면 다른 컴퓨터(작업자)가 수동 보정한 오프셋 파일들과 내 로컬 보정값을 실시간으로 병합하여 동기화합니다.</li>
+            <li>단일 지번(주소 1개)만 연결된 건물은 통합지도로 완전 커버가 가능하므로 개별 캡처를 지능적으로 건너뜁니다.</li>
         </ol>
 
-        <h2>4. 통합 PDF 변환 방법</h2>
+        <h2>4. PDF 변환 및 통합 방법</h2>
         <ol>
-            <li>모든 건물의 통합지도와 개별지도 저장이 끝나면, <code>[PDF 변환]</code> 버튼을 누릅니다.</li>
-            <li>자동으로 동일 건물용도 및 건물순번별로 통합/개별 이미지들을 불러와서 다각형 면적 및 시계방향 알고리즘에 의해 자동 정렬(Stitching)되며, 여백 2cm가 부여된 중앙 정렬 고해상도 PDF 문서가 로컬에 생성됩니다.</li>
+            <li>모든 건물의 통합지도와 개별지도 저장이 끝나면, <code>[PDF 변환]</code> 버튼을 눌러 개별 건물 단위 PDF들을 생성합니다. (폴더 내 전체 이미지를 스캔해 무제한 다중 페이지로 자동 빌드됩니다.)</li>
+            <li>그 후 <code>[PDF 통합]</code> 버튼을 누르면, 동일한 건물 용도별(예: 변전소, 공장 등)로 생성된 PDF들을 건물 순번대로 깔끔하게 일렬로 묶어 최종 전체 통합 PDF 파일(예: <code>변전소_통합.pdf</code>)을 생성합니다.</li>
         </ol>
         
         <button class="close-btn" onclick="window.close()">가이드 창 닫기</button>
@@ -7008,23 +7009,163 @@ async function checkPermissionAndRun(runMode) {
         });
     }
 
-    // 메인화면 수동 클라우드 동기화 버튼 클릭 이벤트
-    const btnGitSyncMain = document.getElementById('btn-git-sync-main');
-    if (btnGitSyncMain) {
-        btnGitSyncMain.addEventListener('click', async () => {
-            btnGitSyncMain.disabled = true;
-            const originalText = btnGitSyncMain.textContent;
-            btnGitSyncMain.textContent = "🔄 동기화 중...";
+    // 메인화면 PDF 통합 버튼 클릭 이벤트
+    const btnPdfMerge = document.getElementById('btn-pdf-merge');
+    if (btnPdfMerge) {
+        btnPdfMerge.addEventListener('click', async () => {
+            btnPdfMerge.disabled = true;
+            const originalText = btnPdfMerge.textContent;
+            btnPdfMerge.textContent = "🔄 통합 중...";
             try {
-                await saveOffsetsToGitHub();
-                alert("✓ GitHub 클라우드 오프셋 데이터 동기화 및 병합이 완료되었습니다!");
+                await mergePDFsByUsage();
             } catch (err) {
-                alert("❌ 동기화 실패: " + err.message);
+                alert("❌ PDF 통합 실패: " + err.message);
             } finally {
-                btnGitSyncMain.disabled = false;
-                btnGitSyncMain.textContent = originalText;
+                btnPdfMerge.disabled = false;
+                btnPdfMerge.textContent = originalText;
             }
         });
+    }
+
+    async function mergePDFsByUsage() {
+        if (!dirHandle) {
+            alert('지도가 저장된 폴더를 먼저 선택해 주세요.');
+            await selectFolder();
+            if (!dirHandle) return;
+        } else {
+            const perm = await verifyPermission(dirHandle, true);
+            if (!perm) {
+                alert('지도를 읽고 PDF를 통합하기 위해 폴더 권한 승인이 필요합니다.');
+                return;
+            }
+        }
+
+        const ov = document.getElementById('cap-ov');
+        const capT = document.getElementById('cap-t');
+        const capS = document.getElementById('cap-s');
+        
+        if (ov) {
+            capT.textContent = 'PDF 통합 중...';
+            capS.textContent = '폴더 스캔 중';
+            ov.classList.add('on');
+        }
+        await sleep(100);
+
+        try {
+            // 1. Scan directory for all PDF files (excluding *_통합.pdf)
+            const pdfFiles = [];
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file' && entry.name.endsWith('.pdf') && !entry.name.endsWith('_통합.pdf')) {
+                    pdfFiles.push(entry);
+                }
+            }
+
+            if (pdfFiles.length === 0) {
+                alert('폴더 내에 통합할 PDF 파일이 없습니다.');
+                return;
+            }
+
+            showLog(`PDF 스캔 완료: PDF 파일 ${pdfFiles.length}개 발견`, 'info');
+
+            // 2. Group PDF files by building usage
+            const groups = {};
+            for (const f of pdfFiles) {
+                const name = f.name.substring(0, f.name.length - 4); // remove .pdf
+                const idx = name.indexOf('_');
+                const usage = idx !== -1 ? name.substring(0, idx) : '';
+                
+                if (!groups[usage]) {
+                    groups[usage] = [];
+                }
+                groups[usage].push(f);
+            }
+
+            const usages = Object.keys(groups).sort();
+            const mergedList = [];
+
+            // 3. Process each usage group
+            for (let i = 0; i < usages.length; i++) {
+                const usage = usages[i];
+                const groupFiles = groups[usage];
+
+                if (ov) {
+                    capS.textContent = `${usage || '기타'} PDF 통합 중 (${i + 1}/${usages.length})`;
+                }
+                await sleep(50);
+
+                // Sort files numerically by building number
+                groupFiles.sort((a, b) => {
+                    const getNum = (name) => {
+                        const cleanName = name.substring(0, name.length - 4);
+                        const idx = cleanName.indexOf('_');
+                        if (idx !== -1) {
+                            return parseInt(cleanName.substring(idx + 1)) || 0;
+                        }
+                        return parseInt(cleanName) || 0;
+                    };
+                    return getNum(a.name) - getNum(b.name);
+                });
+
+                // Merge using pdf-lib
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+                
+                let loadedCount = 0;
+                for (const fh of groupFiles) {
+                    try {
+                        const file = await fh.getFile();
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdfDoc = await PDFDocument.load(arrayBuffer);
+                        const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                        copiedPages.forEach((page) => mergedPdf.addPage(page));
+                        loadedCount++;
+                    } catch (err) {
+                        showLog(`PDF 로드 실패 (${fh.name}): ${err.message}`, 'error');
+                    }
+                }
+
+                if (loadedCount === 0) continue;
+
+                const mergedPdfBytes = await mergedPdf.save();
+                const pdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+
+                const outputName = usage ? `${usage}_통합.pdf` : `기타_통합.pdf`;
+                
+                let savedDirectly = false;
+                if (dirHandle) {
+                    try {
+                        const pdfFileHandle = await dirHandle.getFileHandle(outputName, { create: true });
+                        const writable = await pdfFileHandle.createWritable();
+                        await writable.write(pdfBlob);
+                        await writable.close();
+                        savedDirectly = true;
+                    } catch(err) {
+                        showLog(`PDF 통합본 저장 중 직접 쓰기 오류: ${err.message}`, 'error');
+                    }
+                }
+
+                if (!savedDirectly) {
+                    // Fallback: browser download
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(pdfBlob);
+                    link.download = outputName;
+                    link.click();
+                }
+
+                showLog(`✓ PDF 통합 완료: ${outputName} (${groupFiles.length}개 파일 병합)`, 'success');
+                mergedList.push(outputName);
+            }
+
+            alert(`PDF 통합이 완료되었습니다!\n생성된 파일:\n${mergedList.join('\n')}`);
+
+        } catch(e) {
+            showLog(`PDF 통합 오류: ${e.message}`, 'error');
+            alert(`PDF 통합 중 오류가 발생했습니다: ${e.message}`);
+        } finally {
+            if (ov) {
+                ov.classList.remove('on');
+            }
+        }
     }
 
     document.getElementById('off-x').value = offsetX;
