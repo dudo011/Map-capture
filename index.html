@@ -6435,12 +6435,12 @@ async function convertImagesToPDF() {
             const maxH = Math.max(...imgs.map(img => img.height));
             const gapHeight = Math.round(maxH * 0.07) || 80;
 
-            // 6. Group images into pages (max 15,000 pixels total height per page or max 7 images per page)
+            // 6. Group images into pages (max 6,000 pixels total height per page or max 3 images per page)
             const pages = [];
             let currentPageImgs = [];
             let currentPageH = 0;
-            const maxPageHeight = 15000;
-            const maxImagesPerPage = 7;
+            const maxPageHeight = 6000;
+            const maxImagesPerPage = 3;
             
             for (const img of imgs) {
                 const neededH = img.height + (currentPageImgs.length > 0 ? gapHeight : 0);
