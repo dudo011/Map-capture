@@ -4592,6 +4592,14 @@ async function processBuildingIndividual(bKey) {
     const usage = idx !== -1 ? bKey.substring(0, idx) : '';
     const bNo = idx !== -1 ? bKey.substring(idx + 1) : bKey;
     const addrs = buildingGroups[bKey] || [];
+    
+    // If there is only 1 address in this building group, skip individual capture entirely!
+    if (addrs.length <= 1) {
+        showLog(`[개별지도 건너뜀] 건물 ${bKey}은 지번이 1개이므로 통합지도 이미지로 대체합니다.`, 'info');
+        setBadge(bKey, 'done');
+        return true;
+    }
+    
     setBadge(bKey, 'processing');
     document.getElementById('sb-bno').textContent  = bNo;
     
@@ -5328,13 +5336,15 @@ async function startManualIndividualCalibration() {
     isIndividualManualMode = true;
     manualModeActive = true;
     
-    // Build individual address queue
+    // Build individual address queue (Only include building groups with more than 1 address)
     individualAddressQueue = [];
     buildingQueue.forEach((bKey) => {
         const addrs = buildingGroups[bKey] || [];
-        addrs.forEach((addr) => {
-            individualAddressQueue.push({ bKey: bKey, addr: addr });
-        });
+        if (addrs.length > 1) {
+            addrs.forEach((addr) => {
+                individualAddressQueue.push({ bKey: bKey, addr: addr });
+            });
+        }
     });
     
     const urlParams = new URLSearchParams(window.location.search);
