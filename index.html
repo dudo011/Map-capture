@@ -6232,6 +6232,25 @@ document.getElementById('btn-pdf').addEventListener('click', () => {
     convertImagesToPDF();
 });
 
+function getBuildingPrefix(filename) {
+    const name = filename.substring(0, filename.length - 4);
+    
+    // Pattern 1: {usage}_{number} at the start (e.g. 공장_1_대구...)
+    const matchUsageNum = name.match(/^([a-zA-Z0-9가-힣]+)_([0-9]+)(_|$)/);
+    if (matchUsageNum) {
+        return `${matchUsageNum[1]}_${matchUsageNum[2]}`;
+    }
+    
+    // Pattern 2: just a number at the start (e.g. 1_대구...)
+    const matchNum = name.match(/^([0-9]+)(_|$)/);
+    if (matchNum) {
+        return matchNum[1];
+    }
+    
+    const parts = name.split('_');
+    return parts[0];
+}
+
 async function convertImagesToPDF() {
     if (!dirHandle) {
         alert('지도가 저장된 폴더를 먼저 선택해 주세요.');
@@ -6243,11 +6262,6 @@ async function convertImagesToPDF() {
             alert('지도를 읽고 PDF로 저장하기 위해 폴더 권한 승인이 필요합니다.');
             return;
         }
-    }
-
-    if (buildingQueue.length === 0) {
-        alert('업로드된 건물 데이터가 없습니다. 엑셀 파일을 먼저 업로드해 주세요.');
-        return;
     }
 
     const ov = document.getElementById('cap-ov');
@@ -6272,56 +6286,64 @@ async function convertImagesToPDF() {
 
         showLog(`폴더 스캔 완료: PNG 파일 ${files.length}개 발견`, 'info');
 
+        // 2. Group files by prefix
+        const groups = {};
+        for (const f of files) {
+            const prefix = getBuildingPrefix(f.name);
+            if (!groups[prefix]) {
+                groups[prefix] = {
+                    combined: null,
+                    individuals: []
+                };
+            }
+            if (f.name === `${prefix}.png`) {
+                groups[prefix].combined = f;
+            } else {
+                groups[prefix].individuals.push(f);
+            }
+        }
+
+        // 3. Sort prefixes naturally (e.g. 공장_1, 공장_2, 공장_10)
+        const prefixes = Object.keys(groups).sort((a, b) => {
+            const parseKey = (key) => {
+                const idx = key.indexOf('_');
+                if (idx !== -1) {
+                    const usage = key.substring(0, idx);
+                    const num = parseInt(key.substring(idx + 1)) || 0;
+                    return { usage, num };
+                } else {
+                    return { usage: '', num: parseInt(key) || 0 };
+                }
+            };
+            const pa = parseKey(a);
+            const pb = parseKey(b);
+            if (pa.usage !== pb.usage) return pa.usage.localeCompare(pb.usage);
+            return pa.num - pb.num;
+        });
+
         let pdfCount = 0;
 
-        // 2. Process each building in queue
-        for (let i = 0; i < buildingQueue.length; i++) {
-            const bKey = buildingQueue[i];
-            const idx = bKey.indexOf('_');
-            const usage = idx !== -1 ? bKey.substring(0, idx) : '';
-            const bNo = idx !== -1 ? bKey.substring(idx + 1) : bKey;
-            const basePrefix = bKey;
+        // 4. Process each building group
+        for (let i = 0; i < prefixes.length; i++) {
+            const basePrefix = prefixes[i];
+            const group = groups[basePrefix];
 
             if (ov) {
-                capS.textContent = `건물 ${basePrefix} 처리 중 (${i + 1}/${buildingQueue.length})`;
+                capS.textContent = `${basePrefix} 변환 중 (${i + 1}/${prefixes.length})`;
             }
             await sleep(50);
 
-            // Find files matching the building prefix
-            let combinedFileHandle = null;
-            const matches = [];
-
-            for (const f of files) {
-                if (f.name === `${basePrefix}.png`) {
-                    combinedFileHandle = f;
-                } else if (f.name.startsWith(`${basePrefix}_`)) {
-                    // Extract address label from filename
-                    const cleanPart = f.name.substring(basePrefix.length + 1, f.name.length - 4);
-                    const addrs = buildingGroups[bKey] || [];
-                    const matchedAddr = addrs.find(addr => {
-                        const cleanAddr = addr.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_-]/g, '');
-                        return cleanAddr === cleanPart;
-                    });
-
-                    if (matchedAddr) {
-                        matches.push({ fileHandle: f, address: matchedAddr });
-                    }
-                }
-            }
-
-            if (!combinedFileHandle && matches.length === 0) {
-                showLog(`건물 ${basePrefix}: 해당 건물용 파일이 폴더에 없습니다. 건너뜁니다.`, 'warn');
-                continue;
-            }
-
             // Geocode and calculate parcel areas & centroids for individual maps
             const polygonData = [];
-            for (const item of matches) {
-                const cached = getParcelCache()[item.address];
+            for (const fh of group.individuals) {
+                const cleanPart = fh.name.substring(basePrefix.length + 1, fh.name.length - 4);
+                const approxAddr = cleanPart.replace(/_/g, ' ');
+                
+                const cached = getParcelCache()[approxAddr];
                 if (cached) {
                     polygonData.push({
-                        fileHandle: item.fileHandle,
-                        address: item.address,
+                        fileHandle: fh,
+                        address: approxAddr,
                         area: cached.area,
                         centroid: cached.centroid
                     });
@@ -6329,22 +6351,22 @@ async function convertImagesToPDF() {
                 }
 
                 try {
-                    const coords = await geocodeAddress(item.address);
-                    const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || item.address);
+                    const coords = await geocodeAddress(approxAddr);
+                    const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || approxAddr);
                     const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
-                    saveParcelCache(item.address, metadata);
+                    saveParcelCache(approxAddr, metadata);
 
                     polygonData.push({
-                        fileHandle: item.fileHandle,
-                        address: item.address,
+                        fileHandle: fh,
+                        address: approxAddr,
                         area: metadata.area,
                         centroid: metadata.centroid
                     });
                 } catch(e) {
-                    showLog(`PDF 분석 중 주소 geocode 실패 (${item.address}): ${e.message}`, 'warn');
+                    // Fail gracefully
                     polygonData.push({
-                        fileHandle: item.fileHandle,
-                        address: item.address,
+                        fileHandle: fh,
+                        address: approxAddr,
                         area: 0,
                         centroid: { lon: 128.61065, lat: 35.91317 }
                     });
@@ -6354,32 +6376,40 @@ async function convertImagesToPDF() {
             // Sort logic:
             // 1. Find item with largest area
             let largestItem = null;
-            if (polygonData.length > 0) {
-                largestItem = polygonData.reduce((max, item) => item.area > max.area ? item : max, polygonData[0]);
+            const validGeo = polygonData.filter(item => item.area > 0);
+            if (validGeo.length > 0) {
+                largestItem = validGeo.reduce((max, item) => item.area > max.area ? item : max, validGeo[0]);
             }
 
-            // 2. Compute average centroid of all parcels
-            let sumLon = 0, sumLat = 0;
+            // 2. Compute average centroid of all parcels with valid coordinates
+            let sumLon = 0, sumLat = 0, validGeoCount = 0;
             polygonData.forEach(item => {
-                sumLon += item.centroid.lon;
-                sumLat += item.centroid.lat;
+                if (item.area > 0) {
+                    sumLon += item.centroid.lon;
+                    sumLat += item.centroid.lat;
+                    validGeoCount++;
+                }
             });
-            const centerCentroid = polygonData.length > 0 
-                ? { lon: sumLon / polygonData.length, lat: sumLat / polygonData.length } 
+            const centerCentroid = validGeoCount > 0 
+                ? { lon: sumLon / validGeoCount, lat: sumLat / validGeoCount } 
                 : { lon: 128.61065, lat: 35.91317 };
 
             // 3. Sort remaining items clockwise around center centroid
             const remainingItems = polygonData.filter(item => item !== largestItem);
             remainingItems.sort((a, b) => {
-                const angleA = Math.atan2(a.centroid.lat - centerCentroid.lat, a.centroid.lon - centerCentroid.lon);
-                const angleB = Math.atan2(b.centroid.lat - centerCentroid.lat, b.centroid.lon - centerCentroid.lon);
-                return angleB - angleA; // clockwise sorting
+                if (a.area > 0 && b.area > 0) {
+                    const angleA = Math.atan2(a.centroid.lat - centerCentroid.lat, a.centroid.lon - centerCentroid.lon);
+                    const angleB = Math.atan2(b.centroid.lat - centerCentroid.lat, b.centroid.lon - centerCentroid.lon);
+                    return angleB - angleA; // clockwise sorting
+                } else {
+                    return a.address.localeCompare(b.address);
+                }
             });
 
             // 4. Combine into final sorted list
             const finalFiles = [];
-            if (combinedFileHandle) {
-                finalFiles.push(combinedFileHandle);
+            if (group.combined) {
+                finalFiles.push(group.combined);
             }
             if (largestItem) {
                 finalFiles.push(largestItem.fileHandle);
@@ -6388,7 +6418,7 @@ async function convertImagesToPDF() {
                 finalFiles.push(item.fileHandle);
             });
 
-            // 5. Load images and stitch them vertically
+            // 5. Load images
             const imgs = [];
             for (const fh of finalFiles) {
                 try {
