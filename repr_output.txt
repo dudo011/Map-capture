@@ -1,0 +1,28 @@
+1898: 'async function startManualCombinedCalibration() {\n'
+1899: '    manualModeActive = true;\n'
+1900: '    curManualIdx = 0;\n'
+1901: "    const panel = document.getElementById('manual-calibration-panel');\n"
+1902: "    if (panel) panel.style.display = 'flex';\n"
+1903: "    document.getElementById('btn-manual-save').onclick = handleManualSave;\n"
+1904: "    document.getElementById('btn-manual-prev').onclick = handleManualPrev;\n"
+1905: "    document.addEventListener('keydown', handleManualKeyDown);\n"
+1906: '    await loadManualBuilding(curManualIdx);\n'
+1907: '}\n'
+1908: '\n'
+1909: 'async function loadManualBuilding(idx) {\n'
+1910: '    if (idx < 0 || idx >= buildingQueue.length) return;\n'
+1911: '    curIdx = idx;\n'
+1912: '    const bKey = buildingQueue[idx];\n'
+1913: "    const idx_sep = bKey.indexOf('_');\n"
+1914: "    const usage = idx_sep !== -1 ? bKey.substring(0, idx_sep) : '';\n"
+1915: '    const bNo = idx_sep !== -1 ? bKey.substring(idx_sep + 1) : bKey;\n'
+1916: '    const addrs = buildingGroups[bKey] || [];\n'
+1917: "    const firstAddr = addrs[0] || '';\n"
+1918: '    currentPreviewAddr = firstAddr;\n'
+1919: '    \n'
+1920: "    document.getElementById('manual-bno').textContent = `건물번호: ${bNo} (${idx + 1}/${buildingQueue.length})`;\n"
+1921: "    document.getElementById('manual-addr').textContent = `${firstAddr} 외 ${addrs.length - 1}개 지번`;\n"
+1922: '    \n'
+1923: "    document.getElementById('sb-bno').textContent = bNo;\n"
+1924: "    document.getElementById('sb-addr').textContent = `${addrs.length}개 주소 수동 보정 대기 중...`;\n"
+1925: '    \n'
