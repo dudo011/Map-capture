@@ -13,96 +13,96 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
-    --bg: #060c1a;
-    --panel: rgba(10,18,42,0.98);
-    --card: rgba(16,28,62,0.72);
-    --input: rgba(6,14,36,0.85);
-    --border: rgba(255,255,255,0.07);
-    --border-a: rgba(99,102,241,0.4);
-    --accent: #6366f1;
-    --accent2: #7c3aed;
-    --success: #10b981;
-    --warn: #f59e0b;
-    --danger: #ef4444;
-    --txt: #e2e8f8;
-    --txt2: #94a3b8;
-    --txt3: #475569;
+    --bg: #05070f;
+    --panel: rgba(10, 15, 33, 0.88);
+    --card: rgba(19, 26, 54, 0.5);
+    --input: rgba(6, 9, 21, 0.75);
+    --border: rgba(255, 255, 255, 0.055);
+    --border-a: rgba(99, 102, 241, 0.35);
+    --accent: #818cf8;
+    --accent2: #a78bfa;
+    --success: #2dd4bf;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --txt: #f3f4f6;
+    --txt2: #9ca3af;
+    --txt3: #5f6674;
     --sw: 460px;
 }
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Outfit','Noto Sans KR',sans-serif;-webkit-font-smoothing:antialiased}
-body{background:var(--bg);color:var(--txt);height:100vh;display:flex;overflow:hidden}
+body{background:radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, var(--bg) 80%);color:var(--txt);height:100vh;display:flex;overflow:hidden}
 
 /* SIDEBAR */
-#sidebar{width:var(--sw);height:100vh;background:var(--panel);backdrop-filter:blur(20px);border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex-shrink:0;box-shadow:4px 0 40px rgba(0,0,0,0.45)}
+#sidebar{width:var(--sw);height:100vh;background:var(--panel);backdrop-filter:blur(25px);border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex-shrink:0;box-shadow:4px 0 40px rgba(0,0,0,0.55)}
 #sidebar::-webkit-scrollbar{width:3px}
-#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
 
 .logo{display:flex;align-items:center;gap:13px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(99,102,241,0.35);flex-shrink:0}
-.logo h1{font-size:16px;font-weight:700;color:var(--txt)}
-.logo p{font-size:12.5px;color:var(--txt2)}
+.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,#818cf8,#a78bfa);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 4px 14px rgba(129,140,248,0.3);flex-shrink:0}
+.logo h1{font-size:17.5px;font-weight:700;color:var(--txt);letter-spacing:-0.01em}
+.logo p{font-size:13.5px;color:var(--txt2);margin-top:2px}
 
 /* CARDS */
-.card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.card:hover{border-color:rgba(255,255,255,0.11)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:10px;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+.card:hover{border-color:rgba(129, 140, 248, 0.28);background:rgba(23, 31, 62, 0.58);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,0.25)}
 .ch{display:flex;align-items:center;gap:7px}
-.ci{font-size:16px}
-.ct{font-size:14.5px;font-weight:700;color:var(--txt);flex:1;letter-spacing:.02em}
+.ci{font-size:17px}
+.ct{font-size:15.5px;font-weight:700;color:var(--txt);flex:1;letter-spacing:.02em}
 
 /* API STATUS */
-.api-st{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--txt2)}
-.api-st .dot{width:7px;height:7px;border-radius:50%;background:var(--txt3);transition:background .3s}
-.api-st.on .dot{background:var(--success);box-shadow:0 0 6px rgba(16,185,129,.6)}
-.api-st.on span:last-child{color:var(--success)}
+.api-st{display:flex;align-items:center;gap:4px;font-size:13.5px;color:var(--txt2)}
+.api-st .dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);transition:background .3s}
+.api-st.on .dot{background:var(--success);box-shadow:0 0 6px rgba(45,212,191,.6)}
+.api-st.on span:last-child{color:var(--success);font-weight:500}
 
 /* INPUTS */
 .fg{display:flex;flex-direction:column;gap:4px}
-.fg label{font-size:12px;font-weight:500;color:var(--txt2);letter-spacing:.03em}
-input[type=text],input[type=password],input[type=number],select{width:100%;background:var(--input);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--txt);font-size:13.5px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
-input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.14)}
-select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:28px}
+.fg label{font-size:13px;font-weight:600;color:var(--txt2);letter-spacing:.03em;margin-bottom:1px}
+input[type=text],input[type=password],input[type=number],select{width:100%;background:var(--input);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--txt);font-size:14.5px;outline:none;transition:border-color .2s,box-shadow .2s,background .2s;-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--accent);background:rgba(6, 9, 21, 0.9);box-shadow:0 0 0 3px rgba(129,140,248,.18)}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:28px}
 
 /* BUTTONS */
-.btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 15px;border-radius:8px;border:none;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;white-space:nowrap}
-.btn:disabled{opacity:.38;cursor:not-allowed}
-.bp{background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;box-shadow:0 4px 12px rgba(99,102,241,.25)}
-.bp:hover:not(:disabled){background:linear-gradient(135deg,#4f46e5,#6d28d9);box-shadow:0 4px 18px rgba(99,102,241,.4);transform:translateY(-1px)}
-.bs{background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 4px 12px rgba(16,185,129,.22)}
-.bs:hover:not(:disabled){background:linear-gradient(135deg,#047857,#059669)}
-.bw{background:rgba(245,158,11,.18);color:var(--warn);border:1px solid rgba(245,158,11,.28)}
-.bw:hover:not(:disabled){background:rgba(245,158,11,.28)}
-.bd{background:rgba(239,68,68,.18);color:var(--danger);border:1px solid rgba(239,68,68,.28)}
-.bd:hover:not(:disabled){background:rgba(239,68,68,.28)}
-.bg{background:rgba(255,255,255,.05);color:var(--txt2);border:1px solid var(--border)}
-.bg:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--txt)}
+.btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 15px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s cubic-bezier(0.4, 0, 0.2, 1);outline:none;white-space:nowrap}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.bp{background:linear-gradient(135deg,#818cf8,#a78bfa);color:#fff;box-shadow:0 4px 12px rgba(129,140,248,.25)}
+.bp:hover:not(:disabled){background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 4px 18px rgba(129,140,248,.4);transform:translateY(-1.5px)}
+.bs{background:linear-gradient(135deg,#0d9488,#2dd4bf);color:#fff;box-shadow:0 4px 12px rgba(45,212,191,.22)}
+.bs:hover:not(:disabled){background:linear-gradient(135deg,#0f766e,#0d9488);transform:translateY(-1.5px);box-shadow:0 4px 18px rgba(45,212,191,.35)}
+.bw{background:rgba(251,191,36,.15);color:var(--warn);border:1px solid rgba(251,191,36,.25)}
+.bw:hover:not(:disabled){background:rgba(251,191,36,.25);transform:translateY(-1px)}
+.bd{background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.25)}
+.bd:hover:not(:disabled){background:rgba(248,113,113,.25);transform:translateY(-1px)}
+.bg{background:rgba(255,255,255,.04);color:var(--txt2);border:1px solid var(--border)}
+.bg:hover:not(:disabled){background:rgba(255,255,255,.08);color:var(--txt);transform:translateY(-1px)}
 .full{width:100%}
-.sm{padding:6px 12px;font-size:12.5px;border-radius:6px}
+.sm{padding:6px 12px;font-size:13.5px;border-radius:6px}
 .row{display:flex;gap:7px}
 
 /* DROPZONE */
-#dropzone{border:2px dashed var(--border);border-radius:11px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02)}
-#dropzone:hover,#dropzone.over{border-color:var(--accent);background:rgba(99,102,241,.08)}
-#dropzone.ok{border-color:var(--success);background:rgba(16,185,129,.06)}
+#dropzone{border:1.5px dashed var(--border);border-radius:8px;background:rgba(255,255,255,.02);cursor:pointer;transition:all .25s}
+#dropzone:hover,#dropzone.over{border-color:var(--accent);background:rgba(129,140,248,.08)}
+#dropzone.ok{border-color:var(--success);background:rgba(45,212,191,.06)}
 .dz-icon{font-size:26px;margin-bottom:7px}
-.dz-txt{font-size:14px;color:var(--txt2)}
-.dz-sub{font-size:12px;color:var(--txt3);margin-top:3px}
+.dz-txt{font-size:15px;color:var(--txt2)}
+.dz-sub{font-size:13px;color:var(--txt3);margin-top:3px}
 #file-input{display:none}
-.fi{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:7px;padding:7px 11px;font-size:12.5px;display:none}
+.fi{background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.18);border-radius:7px;padding:8px 12px;font-size:13.5px;display:none}
 .fi.show{display:block}
-.fi-nm{font-size:13.5px;font-weight:600;color:var(--success)}
-.fi-ct{font-size:12px;color:var(--txt2);margin-top:2px}
+.fi-nm{font-size:14.5px;font-weight:600;color:var(--success)}
+.fi-ct{font-size:13px;color:var(--txt2);margin-top:2px}
 
 /* STATS */
 .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.sc{background:var(--input);border:1px solid var(--border);border-radius:7px;padding:7px;text-align:center}
-.sv{font-size:20px;font-weight:700}
-.sl{font-size:10px;color:var(--txt2);margin-top:1px}
+.sc{background:var(--input);border:1px solid var(--border);border-radius:7px;padding:8px 7px;text-align:center}
+.sv{font-size:22px;font-weight:700}
+.sl{font-size:11px;color:var(--txt2);margin-top:1px}
 .sc.ok .sv{color:var(--success)}
 .sc.ng .sv{color:var(--danger)}
 
 /* PROGRESS */
-.pb{background:var(--input);border-radius:5px;height:5px;overflow:hidden;margin:-2px 0}
-.pf{height:100%;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:5px;transition:width .3s ease;width:0}
+.pb{background:var(--input);border-radius:5px;height:6px;overflow:hidden;margin:-2px 0}
+.pf{height:100%;background:linear-gradient(90deg,#818cf8,#a78bfa);border-radius:5px;transition:width .3s ease;width:0}
 
 /* SETTINGS ROW */
 .sr{display:flex;gap:7px}
@@ -111,14 +111,14 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
 /* OFFSET */
 .oc{display:flex;gap:7px;align-items:flex-end}
 .oc .fg{flex:1}
-.ah{font-size:11.5px;color:var(--txt3);display:flex;align-items:center;gap:4px}
-.kb{background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:3px;padding:2px 5px;font-size:11px;color:var(--txt2)}
+.ah{font-size:12.5px;color:var(--txt3);display:flex;align-items:center;gap:4px}
+.kb{background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:3px;padding:2px 5px;font-size:11.5px;color:var(--txt2)}
 
 /* LOG */
-#log{background:var(--input);border:1px solid var(--border);border-radius:9px;padding:9px;height:130px;overflow-y:auto;font-family:'Courier New',monospace;font-size:11px}
+#log{background:var(--input);border:1px solid var(--border);border-radius:9px;padding:9px;height:130px;overflow-y:auto;font-family:'Courier New',monospace;font-size:12px;line-height:1.35}
 #log::-webkit-scrollbar{width:3px}
-#log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
-.le{display:flex;gap:7px;margin-bottom:2px;line-height:1.4}
+#log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+.le{display:flex;gap:7px;margin-bottom:3px;line-height:1.4}
 .lt{color:var(--txt3);flex-shrink:0}
 .lm{word-break:break-all}
 .li .lm{color:var(--txt2)}
@@ -129,136 +129,94 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
 /* BUILDING LIST */
 .ls-w{position:relative}
 .ls-w input{padding-left:26px}
-.ls-ic{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:11.5px;pointer-events:none}
+.ls-ic{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:12px;pointer-events:none}
 #blist{max-height:175px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
 #blist::-webkit-scrollbar{width:3px}
-#blist::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
-.li-item{display:flex;align-items:center;justify-content:space-between;padding:7px 9px;background:var(--input);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;font-size:12px}
-.li-item:hover{background:rgba(99,102,241,.1);border-color:var(--accent)}
+#blist::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+.li-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--input);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px}
+.li-item:hover{background:rgba(129,140,248,.12);border-color:var(--accent)}
 .li-info{flex:1;min-width:0}
-.li-no{font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.li-use{font-size:11px;color:var(--txt2)}
-.li-cnt{font-size:11px;color:var(--txt3)}
-.badge{font-size:11.5px;padding:3px 8px;border-radius:20px;font-weight:500;flex-shrink:0}
+.li-no{font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.li-use{font-size:12px;color:var(--txt2)}
+.li-cnt{font-size:12px;color:var(--txt3)}
+.badge{font-size:12px;padding:3px 8px;border-radius:20px;font-weight:500;flex-shrink:0}
 .sp{background:rgba(100,116,139,.2);color:var(--txt3)}
-.sg2{background:rgba(99,102,241,.2);color:var(--accent);animation:pu 1.5s infinite}
-.sd{background:rgba(16,185,129,.2);color:var(--success)}
-.se{background:rgba(239,68,68,.2);color:var(--danger)}
+.sg2{background:rgba(129,140,248,.2);color:var(--accent);animation:pu 1.5s infinite}
+.sd{background:rgba(45,212,191,.2);color:var(--success)}
+.se{background:rgba(248,113,113,.2);color:var(--danger)}
 @keyframes pu{0%,100%{opacity:1}50%{opacity:.55}}
 
 /* MAP */
-#map-container{flex:1;height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#0a1428}
-#statusbar{background:rgba(6,12,26,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:9px 15px;display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--txt2);z-index:10;flex-shrink:0}
+#map-container{flex:1;height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;background:#05070f}
+#statusbar{background:rgba(6,8,19,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:9px 15px;display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--txt2);z-index:10;flex-shrink:0}
 #statusbar .sbi{display:flex;align-items:center;gap:5px}
 #statusbar .sbl{color:var(--txt3)}
 #statusbar .sbv{color:var(--txt);font-weight:500;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #map{flex:1;width:100%}
 
 /* CAPTURE OVERLAY */
-#cap-ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,12,26,.96);z-index:10000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#cap-ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,7,15,.96);z-index:10000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
 #cap-ov.on{display:flex}
 .cap-ic{font-size:44px;animation:cb .7s infinite alternate}
 @keyframes cb{0%{transform:scale(1)}100%{transform:scale(1.08)}}
-.cap-t{font-size:18px;font-weight:600}
-.cap-s{font-size:13px;color:var(--txt2)}
+.cap-t{font-size:19px;font-weight:600}
+.cap-s{font-size:14px;color:var(--txt2)}
 
 /* EMPTY */
-.empty{text-align:center;padding:18px;color:var(--txt3);font-size:12.5px}
+.empty{text-align:center;padding:18px;color:var(--txt3);font-size:13.5px}
 .empty .ei{font-size:22px;margin-bottom:6px}
 </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div class="logo">
-        <div class="logo-icon">🗺</div>
-        <div>
-            <h1>지적도 캡처 자동화 v4.1</h1>
-            <p>Naver Map × Vworld 연동</p>
+    <div class="logo" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 13px;">
+            <div class="logo-icon">🗺</div>
+            <div>
+                <h1>지적도 캡처 자동화 v4.1</h1>
+                <p>Naver Map × Vworld 연동</p>
+            </div>
         </div>
+        <button class="btn bp" id="btn-guide" style="padding: 7px 14px; font-size: 14.5px; font-weight: 700; margin: 0; box-shadow: 0 4px 12px rgba(129,140,248,0.25);">가이드</button>
     </div>
 
     <!-- CARD 2: CONFIG (환경 설정) -->
     <div class="card">
-        <div class="ch"><span class="ci">⚙️</span><h2 class="ct">환경 설정</h2></div>
+        <div class="ch">
+            <span class="ci">⚙️</span>
+            <h2 class="ct">환경 설정</h2>
+        </div>
         
-        <!-- Row 1: Zoom Level & Save Folder -->
+        <!-- Row 1: Zoom Level, Stroke Weight & Offset List Button -->
         <div class="sr">
             <div class="fg" style="flex: 0 0 65px;">
                 <label>줌 레벨</label>
-                <input type="text" id="zoom-level-display" value="18" readonly style="text-align: center; font-weight: bold; background: rgba(255,255,255,0.05); color: var(--accent); border-color: var(--border);">
+                <input type="text" id="zoom-level-display" value="19" readonly style="text-align: center; font-weight: bold; background: rgba(255,255,255,0.05); color: var(--accent); border-color: var(--border);">
             </div>
+            <div class="fg" style="flex: 0 0 120px;">
+                <label>경계선 두께(px)</label>
+                <input type="number" id="stroke-weight" value="4" min="1" max="15" step="1" style="text-align: center; background: rgba(255,255,255,0.05); border-color: var(--border); color: var(--txt);">
+            </div>
+            <div class="fg" style="flex: 1;">
+                <label>&nbsp;</label>
+                <button class="btn bg sm full" id="btn-export-excel" style="font-weight: 700; width: 100%; padding: 7px 10px; margin: 0; display: block; font-size: 14px;">📋 경계선 보정값 리스트</button>
+            </div>
+        </div>
+
+        <!-- Row 2: Save Folder Path -->
+        <div class="sr" style="margin-top: 4px;">
             <div class="fg" style="flex: 1; min-width: 0;">
                 <label>저장 폴더 경로</label>
                 <div class="row" style="gap: 4px;">
-                    <input type="text" id="save-folder-path" value="C:\Users\dudo0\Downloads\map" readonly style="flex: 1; background: rgba(255,255,255,0.05); border-color: var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px;" placeholder="폴더 선택...">
-                    <button class="btn bg sm" id="btn-select-folder" style="padding: 7px 10px;">선택...</button>
+                    <input type="text" id="save-folder-path" value="저장 경로를 설정해 주세요" readonly style="flex: 1; background: rgba(255,255,255,0.05); border-color: var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px;">
+                    <button class="btn bg sm" id="btn-select-folder" style="padding: 7px 10px; font-size: 14px;">선택...</button>
                 </div>
             </div>
         </div>
-
-        <!-- Row 2: Offsets and Stroke Weight Combined -->
-        <div class="oc" style="margin-top: 4px;">
-            <div class="fg" style="flex: 1;">
-                <label>X 보정</label>
-                <input type="number" id="off-x" value="0" step="1">
-            </div>
-            <div class="fg" style="flex: 1;">
-                <label>Y 보정</label>
-                <input type="number" id="off-y" value="14" step="1">
-            </div>
-            <div class="fg" style="flex: 1;">
-                <label>두께(px)</label>
-                <input type="number" id="stroke-weight" value="4" min="1" max="15" step="1">
-            </div>
-            <button class="btn bg sm" id="btn-rst-off" title="초기화" style="padding: 7px 10px;">↺</button>
-        </div>
-        <div class="ah"><span class="kb">↑↓←→</span><span>방향키로 1단위씩 조정 (1단위 ≈ 1m)</span></div>
-        <div class="ah" style="margin-top: 4px; display: flex; justify-content: space-between; width: 100%;">
-            <span>적용 지역: <strong id="current-region-display" style="color: var(--accent);">미지정</strong></span>
-            <span id="region-save-status" style="color: var(--success); font-weight: 600;"></span>
-        </div>
-
-        <!-- GitHub Sync Section -->
-        <div style="border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px;">
-            <div class="ch" id="git-toggle" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 7px;">
-                    <span class="ci">☁️</span>
-                    <span style="font-size: 13px; font-weight: 600; color: var(--txt2);">GitHub 클라우드 동기화</span>
-                </div>
-                <span id="git-toggle-icon" style="font-size: 10px; color: var(--txt3);">▼</span>
-            </div>
-            <div id="git-config-panel" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 7px; border: 1px solid var(--border);">
-                <div class="fg">
-                    <label>GitHub Access Token (PAT)</label>
-                    <input type="password" id="git-token" placeholder="ghp_..." style="font-size: 12px; padding: 6px 10px;">
-                </div>
-                <div class="sr">
-                    <div class="fg" style="flex: 1;">
-                        <label>Owner (계정 ID)</label>
-                        <input type="text" id="git-owner" placeholder="github_id" style="font-size: 12px; padding: 6px 10px;">
-                    </div>
-                    <div class="fg" style="flex: 1;">
-                        <label>Repository (저장소명)</label>
-                        <input type="text" id="git-repo" placeholder="repo-name" style="font-size: 12px; padding: 6px 10px;">
-                    </div>
-                </div>
-                <div class="sr">
-                    <div class="fg" style="flex: 1;">
-                        <label>Branch (브랜치)</label>
-                        <input type="text" id="git-branch" value="main" style="font-size: 12px; padding: 6px 10px;">
-                    </div>
-                    <div class="fg" style="flex: 1;">
-                        <label>File Path (저장 파일)</label>
-                        <input type="text" id="git-path" value="offsets.json" style="font-size: 12px; padding: 6px 10px;">
-                    </div>
-                </div>
-                <div class="row" style="margin-top: 4px;">
-                    <button class="btn bg sm" id="btn-git-test" style="flex: 1; padding: 6px 10px;">🔌 연동 테스트</button>
-                    <button class="btn bp sm" id="btn-git-sync" style="flex: 1; padding: 6px 10px;">🔄 지금 동기화</button>
-                </div>
-                <div id="git-status-msg" style="font-size: 11px; text-align: center; margin-top: 2px; color: var(--txt3);"></div>
-            </div>
+        <div style="display: none;">
+            <input type="number" id="off-x" value="0">
+            <input type="number" id="off-y" value="14">
         </div>
     </div>
 
@@ -267,23 +225,30 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
         <div class="ch">
             <span class="ci">📊</span>
             <h2 class="ct">주소 업로드</h2>
-            <button class="btn bg sm" id="btn-tpl" title="샘플 엑셀 다운로드">📥 양식</button>
         </div>
-        <div id="dropzone" onclick="document.getElementById('file-input').click()">
-            <div class="dz-icon">📁</div>
-            <div class="dz-txt">엑셀 파일을 드롭하거나 클릭</div>
-            <div class="dz-sub">A열: 건물용도 &nbsp;|&nbsp; B열: 건물번호 &nbsp;|&nbsp; C열: 주소</div>
+        <div class="row" style="gap: 6px;">
+            <button class="btn bg" id="btn-tpl" title="샘플 엑셀 다운로드" style="flex: 1; padding: 10px; font-weight: 600; font-size: 14.5px; height: 42px;">양식 다운로드</button>
+            <div id="dropzone" onclick="document.getElementById('file-input').click()" style="flex: 1; height: 42px; display: flex; align-items: center; justify-content: center; border: 1.5px dashed var(--border); border-radius: 8px; background: rgba(255,255,255,0.02); cursor: pointer; transition: all .2s; padding: 0;">
+                <span style="font-size: 14.5px; font-weight: 600; color: var(--txt2);">엑셀 업로드</span>
+                <!-- JS 에러 방지를 위해 숨김 처리된 텍스트 홀더 -->
+                <div style="display: none;">
+                    <div class="dz-icon"></div>
+                    <div class="dz-txt"></div>
+                    <div class="dz-sub"></div>
+                </div>
+            </div>
         </div>
         <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
         <div class="fi" id="fi">
             <div class="fi-nm" id="fi-nm"></div>
             <div class="fi-ct" id="fi-ct"></div>
         </div>
-        <!-- Action Buttons (3 in a row) -->
-        <div class="row" style="margin-top: 8px;">
-            <button class="btn bs" id="btn-start-combined" disabled style="flex: 1; padding: 8px 4px; font-size: 13px;">🗺️ 통합지도</button>
-            <button class="btn bp" id="btn-start-individual" disabled style="flex: 1; padding: 8px 4px; font-size: 13px;">🏢 개별지도</button>
-            <button class="btn bg" id="btn-pdf" style="flex: 1; padding: 8px 4px; font-size: 13px;">📄 PDF 변환</button>
+        <!-- Action Buttons (1x4 Row) -->
+        <div class="row" style="margin-top: 8px; gap: 5px;">
+            <button class="btn bs" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">통합<br>지도</button>
+            <button class="btn bp" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">개별<br>지도</button>
+            <button class="btn bs" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">PDF<br>변환</button>
+            <button class="btn bp" id="btn-git-sync-main" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">클라우드<br>동기화</button>
         </div>
     </div>
 </div>
@@ -306,10 +271,11 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <div style="font-size: 14.5px; font-weight: bold; color: var(--txt); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" id="manual-bno">건물번호: -</div>
             <div style="font-size: 12.5px; color: var(--txt2); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" id="manual-addr">로딩 중...</div>
             <div style="font-size: 13px; color: var(--accent); font-weight: 600;" id="manual-offsets">보정 X값: 0 | Y값: 0</div>
-            <div style="margin-top: 4px; display: flex; gap: 8px;">
-                <button class="btn bg sm" id="btn-manual-prev" style="flex: 1; padding: 8px 10px; font-weight: 700;">이전</button>
-                <button class="btn bg sm" id="btn-manual-next" style="flex: 1; padding: 8px 10px; font-weight: 700;">다음</button>
-                <button class="btn bp sm" id="btn-manual-save" style="flex: 1; padding: 8px 10px; font-weight: 700;">저장</button>
+            <div style="margin-top: 4px; display: flex; gap: 6px; align-items: center;">
+                <input type="number" id="input-manual-jump" min="1" placeholder="순번" title="이동할 건물 순번 입력" style="width: 60px; padding: 8px 4px; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--txt); font-size: 13.5px; height: 33px; outline: none; transition: border-color 0.2s;">
+                <button class="btn bg sm" id="btn-manual-prev" style="flex: 1; padding: 8px 6px; font-weight: 700; height: 33px; font-size: 13px;">이전</button>
+                <button class="btn bg sm" id="btn-manual-next" style="flex: 1; padding: 8px 6px; font-weight: 700; height: 33px; font-size: 13px;">다음</button>
+                <button class="btn bp sm" id="btn-manual-save" style="flex: 1; padding: 8px 6px; font-weight: 700; height: 33px; font-size: 13px;">저장</button>
             </div>
         </div>
     </div>
@@ -342,18 +308,18 @@ const CONFIG = {
 // EMBEDDED_OFFSETS_START
 const EMBEDDED_OFFSETS = {
     "대구광역시 북구 검단동 513-3": {
-        "x": -12,
-        "y": 17,
+        "x": 117,
+        "y": -139,
         "lon": 128.61124068568793,
         "lat": 35.912527778748164,
-        "timestamp": 1780791249749
+        "timestamp": 1780820615809
     },
     "대구광역시 북구 산격동 16-1": {
-        "x": -12,
+        "x": 8,
         "y": 17,
         "lon": 128.6098222959618,
         "lat": 35.91325331297226,
-        "timestamp": 1780791250074
+        "timestamp": 1780820617902
     },
     "대구광역시 수성구 수성동 4가 1000-1": {
         "x": 0,
@@ -393,16 +359,16 @@ const EMBEDDED_OFFSETS = {
     "대구광역시 북구 검단동 495": {
         "x": -12,
         "y": 17,
-        "lon": 128.61065,
-        "lat": 35.91317,
-        "timestamp": 1780795962978
+        "lon": 128.61047176965928,
+        "lat": 35.913443033595144,
+        "timestamp": 1780820611437
     },
     "대구광역시 북구 검단동 512-3": {
-        "x": -12,
-        "y": 17,
-        "lon": 128.6109,
-        "lat": 35.9134,
-        "timestamp": 1780795962987
+        "x": 117,
+        "y": -139,
+        "lon": 128.61092166935987,
+        "lat": 35.9127455018466,
+        "timestamp": 1780820613409
     },
     "대구광역시 수성구 수성동4가 1000-1": {
         "x": 0,
@@ -1025,28 +991,28 @@ const EMBEDDED_OFFSETS = {
         "y": 5,
         "lon": 128.51036105588662,
         "lat": 35.811110906044235,
-        "timestamp": 1780793130649
+        "timestamp": 1780820261966
     },
     "대구광역시 달성군 화원읍 구라리 1718-1": {
         "x": -4,
         "y": 5,
         "lon": 128.51055174088148,
         "lat": 35.809917929211494,
-        "timestamp": 1780793130997
+        "timestamp": 1780820271796
     },
     "대구광역시 달성군 화원읍 구라리 1736-21": {
         "x": -4,
         "y": 5,
         "lon": 128.51184158014905,
         "lat": 35.80962568412184,
-        "timestamp": 1780793131572
+        "timestamp": 1780820274038
     },
     "대구광역시 달성군 화원읍 구라리 산 3-8": {
         "x": -4,
         "y": 5,
         "lon": 128.51072940120895,
         "lat": 35.81089984417524,
-        "timestamp": 1780793131737
+        "timestamp": 1780820276715
     },
     "대구광역시 달성군 가창면 삼산리 104": {
         "x": 49,
@@ -1343,11 +1309,11 @@ const EMBEDDED_OFFSETS = {
         "timestamp": 1780794385921
     },
     "경상북도 고령군 다산면 송곡리 1459": {
-        "x": 114,
+        "x": 117,
         "y": -139,
         "lon": 128.3894153088641,
         "lat": 35.78704931690898,
-        "timestamp": 1780796806578
+        "timestamp": 1780820171756
     },
     "경상북도 고령군 쌍림면 신곡리 561-2": {
         "x": -101,
@@ -3039,6 +3005,16 @@ const EMBEDDED_OFFSETS = {
 };
 // EMBEDDED_OFFSETS_END
 
+// GITHUB_SYNC_CONFIG_START
+const GITHUB_SYNC_CONFIG = {
+    "owner": "",
+    "repo": "",
+    "branch": "main",
+    "path": "offsets.json",
+    "tokenBytes": []
+};
+// GITHUB_SYNC_CONFIG_END
+
 // ==========================================
 // 1. GLOBAL STATE
 // ==========================================
@@ -3057,7 +3033,7 @@ let batchStatus       = 'IDLE'; // IDLE | RUNNING | PAUSED | STOPPED
 let offsetX           = parseFloat(localStorage.getItem('mapOffsetX') ?? '0')   || 0;
 let offsetY           = parseFloat(localStorage.getItem('mapOffsetY') ?? '14') || 14;
 let strokeWeight      = parseInt(localStorage.getItem('mapStrokeWeight') ?? '4') || 4;
-let individualZoom    = 18;
+let individualZoom    = 19;
 
 let doneCount         = 0;
 let failCount         = 0;
@@ -3233,11 +3209,18 @@ function saveRegionalOffset(region, x, y) {
 // ==========================================
 // GitHub API Sync & Merge Helpers
 // ==========================================
+function getEmbeddedGitToken() {
+    if (GITHUB_SYNC_CONFIG.tokenBytes && GITHUB_SYNC_CONFIG.tokenBytes.length > 0) {
+        return GITHUB_SYNC_CONFIG.tokenBytes.map(c => String.fromCharCode(c ^ 7)).join('');
+    }
+    return '';
+}
+
 async function callGitHubAPI(method, path, body = null, sha = null) {
-    const token = localStorage.getItem('git-token') || '';
-    const owner = localStorage.getItem('git-owner') || '';
-    const repo = localStorage.getItem('git-repo') || '';
-    const branch = localStorage.getItem('git-branch') || 'main';
+    const token = localStorage.getItem('git-token') || getEmbeddedGitToken() || '';
+    const owner = localStorage.getItem('git-owner') || GITHUB_SYNC_CONFIG.owner || '';
+    const repo = localStorage.getItem('git-repo') || GITHUB_SYNC_CONFIG.repo || '';
+    const branch = localStorage.getItem('git-branch') || GITHUB_SYNC_CONFIG.branch || 'main';
 
     if (!token || !owner || !repo) {
         throw new Error("GitHub 연동 정보가 설정되지 않았습니다.");
@@ -3295,18 +3278,23 @@ function mergeOffsets(localObj, remoteObj) {
 }
 
 async function syncOffsetsFromGitHub() {
-    const token = localStorage.getItem('git-token');
-    const owner = localStorage.getItem('git-owner');
-    const repo = localStorage.getItem('git-repo');
+    const token = localStorage.getItem('git-token') || getEmbeddedGitToken();
+    const owner = localStorage.getItem('git-owner') || GITHUB_SYNC_CONFIG.owner;
+    const repo = localStorage.getItem('git-repo') || GITHUB_SYNC_CONFIG.repo;
     if (!token || !owner || !repo) return;
 
-    const path = localStorage.getItem('git-path') || 'offsets.json';
+    const path = localStorage.getItem('git-path') || GITHUB_SYNC_CONFIG.path || 'offsets.json';
     try {
         showLog("[GitHub 동기화] 클라우드 오프셋 로드 중...", "info");
         const fileData = await callGitHubAPI("GET", path);
         if (fileData && fileData.content) {
             const decodedContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
-            const remoteOffsets = JSON.parse(decodedContent);
+            let remoteOffsets = {};
+            try {
+                remoteOffsets = decodedContent.trim() ? JSON.parse(decodedContent) : {};
+            } catch(pe) {
+                showLog("[GitHub 동기화] 클라우드 파일 파싱 실패 (빈 파일 혹은 포맷 불일치). 빈 오프셋으로 시작합니다.", "warn");
+            }
             
             addressOffsets = mergeOffsets(addressOffsets, remoteOffsets);
             try {
@@ -3322,12 +3310,12 @@ async function syncOffsetsFromGitHub() {
 }
 
 async function saveOffsetsToGitHub() {
-    const token = localStorage.getItem('git-token');
-    const owner = localStorage.getItem('git-owner');
-    const repo = localStorage.getItem('git-repo');
+    const token = localStorage.getItem('git-token') || getEmbeddedGitToken();
+    const owner = localStorage.getItem('git-owner') || GITHUB_SYNC_CONFIG.owner;
+    const repo = localStorage.getItem('git-repo') || GITHUB_SYNC_CONFIG.repo;
     if (!token || !owner || !repo) return;
 
-    const path = localStorage.getItem('git-path') || 'offsets.json';
+    const path = localStorage.getItem('git-path') || GITHUB_SYNC_CONFIG.path || 'offsets.json';
     try {
         showLog("[GitHub 동기화] 클라우드 백업 및 병합 시도...", "info");
         
@@ -3338,7 +3326,11 @@ async function saveOffsetsToGitHub() {
             sha = fileData.sha;
             if (fileData.content) {
                 const decodedContent = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
-                remoteOffsets = JSON.parse(decodedContent);
+                try {
+                    remoteOffsets = decodedContent.trim() ? JSON.parse(decodedContent) : {};
+                } catch(pe) {
+                    showLog("[GitHub 동기화] 클라우드 파일 파싱 실패 (빈 파일 혹은 포맷 불일치). 빈 오프셋으로 병합합니다.", "warn");
+                }
             }
         }
 
@@ -3352,7 +3344,6 @@ async function saveOffsetsToGitHub() {
         showLog("[GitHub 동기화] 클라우드 동기화 완료!", "success");
     } catch (e) {
         showLog(`[GitHub 동기화 실패] ${e.message}`, "error");
-        alert(`GitHub 클라우드 동기화 중 오류가 발생했습니다.\n다른 사용자의 동시 수정으로 인한 충돌일 수 있으니, 1~2초 후 재시도해 주세요.\n\n오류 내용: ${e.message}`);
     }
 }
 
@@ -3469,7 +3460,16 @@ async function selectFolder() {
         if (perm) {
             dirHandle = handle;
             await setDBValue('dirHandle', handle);
-            let pathStr = `C:\\Users\\dudo0\\Downloads\\${handle.name}`;
+            
+            let pathStr = `C:\\Users\\User\\Downloads\\${handle.name}`; // Fallback
+            try {
+                const resp = await fetch(`/api/downloads-path?folder=${encodeURIComponent(handle.name)}`);
+                if (resp.ok) {
+                    const json = await resp.json();
+                    if (json.path) pathStr = json.path;
+                }
+            } catch(e) {}
+            
             const pEl = document.getElementById('save-folder-path');
             if (pEl) pEl.value = pathStr;
             localStorage.setItem('saveFolderDisplay', pathStr);
@@ -4161,6 +4161,11 @@ function fitBounds(pad = 80) {
         new naver.maps.LatLng(mnLat, mnLon),
         new naver.maps.LatLng(mxLat, mxLon)
     ), { padding: pad });
+
+    // Limit maximum zoom level to individualZoom configured in settings
+    if (naverMap.getZoom() > individualZoom) {
+        naverMap.setZoom(individualZoom, false);
+    }
 }
 
 function waitForMapIdle(timeoutMs = 2000) {
@@ -4212,6 +4217,11 @@ function fitBoundsAndWait(pad = 80) {
             new naver.maps.LatLng(mnLat, mnLon),
             new naver.maps.LatLng(mxLat, mxLon)
         ), { padding: pad });
+
+        // Limit maximum zoom level to individualZoom configured in settings
+        if (naverMap.getZoom() > individualZoom) {
+            naverMap.setZoom(individualZoom, false);
+        }
 
         setTimeout(() => {
             waitForMapIdle(2500).then(resolve);
@@ -4770,6 +4780,24 @@ async function startManualCombinedCalibration() {
     if (btnPrev) btnPrev.onclick = handleManualPrev;
     const btnNext = document.getElementById('btn-manual-next');
     if (btnNext) btnNext.onclick = handleManualNext;
+    
+    // 순번 점프 인풋 바인딩
+    const inputJump = document.getElementById('input-manual-jump');
+    if (inputJump) {
+        inputJump.onchange = async () => {
+            const val = parseInt(inputJump.value) || 1;
+            const targetIdx = Math.max(0, Math.min(buildingQueue.length - 1, val - 1));
+            curManualIdx = targetIdx;
+            await loadManualBuilding(curManualIdx);
+        };
+        inputJump.onkeydown = async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                inputJump.blur(); // 포커스를 아웃시키며 change 이벤트 유발
+            }
+        };
+    }
+    
     document.addEventListener('keydown', handleManualKeyDown);
     await loadManualBuilding(curManualIdx);
 }
@@ -4787,6 +4815,13 @@ async function loadManualBuilding(idx) {
     currentPreviewAddr = firstAddr;
     
     document.getElementById('manual-bno').textContent = `건물번호: ${bNo} (${idx + 1}/${buildingQueue.length})`;
+    
+    // 순번 입력 창 동기화
+    const inputJump = document.getElementById('input-manual-jump');
+    if (inputJump) {
+        inputJump.value = idx + 1;
+    }
+    
     const addrText = addrs.length > 1 ? `${firstAddr} 외 ${addrs.length - 1}개 지번` : firstAddr;
     document.getElementById('manual-addr').textContent = addrText;
     
@@ -5172,17 +5207,6 @@ document.getElementById('btn-start-combined').addEventListener('click', async ()
     }
     
     let startIdx = 0;
-    const promptVal = prompt(`통합지도 수동 정렬을 시작할 건물의 번호(순번)를 입력해 주세요.\n(1부터 ${buildingQueue.length}까지 입력 가능, 기본값: 1)`);
-    if (promptVal === null) return; // 취소 시 중단
-    if (promptVal.trim() !== '') {
-        const val = parseInt(promptVal) || 1;
-        if (val >= 1 && val <= buildingQueue.length) {
-            startIdx = val - 1;
-        } else {
-            alert('올바른 범위의 번호를 입력해 주세요.');
-            return;
-        }
-    }
     
     // Save state to localStorage
     localStorage.setItem('buildingQueue', JSON.stringify(buildingQueue));
@@ -5547,20 +5571,6 @@ document.getElementById('stroke-weight').addEventListener('change', e => {
     if (cachedGeometries.length) redrawCached();
 });
 
-document.getElementById('btn-rst-off').addEventListener('click', () => {
-    offsetX = 0; offsetY = 14;
-    localStorage.setItem('mapOffsetX', offsetX);
-    localStorage.setItem('mapOffsetY', offsetY);
-    document.getElementById('off-x').value = offsetX;
-    document.getElementById('off-y').value = offsetY;
-    if (currentPreviewAddr) {
-        const region = getRegionPrefix(currentPreviewAddr);
-        saveRegionalOffset(region, offsetX, offsetY);
-    }
-    if (cachedGeometries.length) redrawCached();
-    updateManualOffsetsDisplay();
-    showLog('위치 보정 초기화 (X=0, Y=14)', 'info');
-});
 
 // 폴더 선택 버튼 이벤트 바인딩
 const btnSelFolder = document.getElementById('btn-select-folder');
@@ -5683,73 +5693,232 @@ async function checkPermissionAndRun(runMode) {
 (async function init() {
     initAddressOffsets();
     
-    // GitHub 연동 UI 초기 세팅 및 이벤트 바인딩
-    const gitToggle = document.getElementById('git-toggle');
-    const gitPanel = document.getElementById('git-config-panel');
-    const gitToggleIcon = document.getElementById('git-toggle-icon');
-    
-    if (gitToggle && gitPanel) {
-        gitToggle.addEventListener('click', () => {
-            const isHidden = gitPanel.style.display === 'none';
-            gitPanel.style.display = isHidden ? 'flex' : 'none';
-            gitToggleIcon.textContent = isHidden ? '▲' : '▼';
-        });
-    }
-
-    const gitFields = ['git-token', 'git-owner', 'git-repo', 'git-branch', 'git-path'];
-    gitFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.value = localStorage.getItem(id) || el.value || '';
-            el.addEventListener('input', () => {
-                localStorage.setItem(id, el.value.trim());
-            });
+    // GITHUB_SYNC_CONFIG 값 초기 로드 채우기 (UI 제거에 따라 백그라운드 구동을 위해 로컬 스토리지 직접 세팅)
+    const fillFields = {
+        'git-owner': GITHUB_SYNC_CONFIG.owner,
+        'git-repo': GITHUB_SYNC_CONFIG.repo,
+        'git-branch': GITHUB_SYNC_CONFIG.branch,
+        'git-path': GITHUB_SYNC_CONFIG.path
+    };
+    for (const [key, val] of Object.entries(fillFields)) {
+        if (!localStorage.getItem(key) && val) {
+            localStorage.setItem(key, val);
         }
-    });
+    }
 
-    const btnGitTest = document.getElementById('btn-git-test');
-    if (btnGitTest) {
-        btnGitTest.addEventListener('click', async () => {
-            const msgEl = document.getElementById('git-status-msg');
-            if (msgEl) {
-                msgEl.textContent = "연동 테스트 중...";
-                msgEl.style.color = "var(--txt2)";
+    // 프로그램 가이드 버튼 클릭 이벤트
+    const btnGuide = document.getElementById('btn-guide');
+    if (btnGuide) {
+        btnGuide.addEventListener('click', () => {
+            const win = window.open('', '_blank', 'width=800,height=700,scrollbars=yes');
+            if (!win) {
+                alert("팝업 차단이 활성화되어 있어 가이드 창을 열지 못했습니다.\n팝업을 허용해 주세요.");
+                return;
             }
-            try {
-                const path = localStorage.getItem('git-path') || 'offsets.json';
-                const fileData = await callGitHubAPI("GET", path);
-                if (msgEl) {
-                    if (fileData) {
-                        msgEl.textContent = "🔌 연동 성공! (원격 파일 발견됨)";
-                        msgEl.style.color = "var(--success)";
-                    } else {
-                        msgEl.textContent = "🔌 연동 성공! (신규 파일 생성 예정)";
-                        msgEl.style.color = "var(--success)";
-                    }
-                }
-            } catch (err) {
-                if (msgEl) {
-                    msgEl.textContent = "❌ 연동 실패: " + err.message;
-                    msgEl.style.color = "var(--danger)";
-                }
-            }
+            
+            const guideHTML = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>지적도 캡처 자동화 시스템 가이드</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #111424;
+            color: #d1d4e0;
+            padding: 40px 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #181d33;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid #282f4d;
+        }
+        h1 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3d8bff;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2 {
+            color: #3d8bff;
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3d8bff;
+            padding-left: 10px;
+        }
+        ol {
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+        li {
+            margin-bottom: 12px;
+        }
+        code {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .notice {
+            background: rgba(255, 68, 68, 0.08);
+            border-left: 4px solid #ff4444;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 25px;
+        }
+        .notice h2 {
+            color: #ff4444;
+            border-left: none;
+            padding-left: 0;
+            margin-top: 0;
+        }
+        .notice ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .close-btn {
+            display: block;
+            width: 100%;
+            background: #3d8bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 30px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .close-btn:hover {
+            background: #2672e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ 지적도 캡처 자동화 시스템 가이드</h1>
+
+        <div class="notice" style="margin-top: 10px; margin-bottom: 20px;">
+            <h2>⚠️ 필수 유의 사항 (필독)</h2>
+            <ul style="padding-left: 20px;">
+                <li style="margin-bottom: 10px;"><strong>폴더 쓰기 동의 오버레이</strong> : 브라우저가 로컬 폴더에 이미지를 저장하거나 PDF를 빌드할 때, 화면 상단에 "폴더 쓰기/수정 권한 동의" 팝업이 뜰 수 있습니다. 반드시 <strong>'허용'</strong> 또는 <strong>'변경사항 저장'</strong>을 눌러주셔야 정상 저장이 완료됩니다.</li>
+                <li><strong>위성 지도와 지적 경계선의 수동 보정</strong> :
+                    <ul style="padding-left: 20px; margin-top: 5px; list-style-type: circle;">
+                        <li style="margin-bottom: 5px;"><strong>수동 보정이 필요한 사유</strong> : 위성 지도는 촬영 시점의 카메라 각도, 지형의 고저차로 인한 기하 왜곡(기복 왜곡), 그리고 지도 API(Naver Map)와 지적 경계 API(Vworld) 좌표계 간의 미세한 기준 편차(약 1m~15m 내외)로 인해 지붕과 지적 경계선이 어긋날 수 있습니다. 정밀한 경계 일치를 위해 수동 보정이 필요합니다.</li>
+                        <li><strong>경계선 미세 조정</strong> : 통합지도 버튼을 눌렀을 때, 위성 지도의 건물 지붕과 지적도 경계선이 딱 맞지 않을 경우, 키보드 방향키 (<code>↑</code>, <code>↓</code>, <code>←</code>, <code>→</code>)를 눌러 경계선을 미세 조정한 후 저장 버튼을 누릅니다.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        
+        <h2>1. 환경 설정 (처음 실행 시)</h2>
+        <ol>
+            <li><strong>줌레벨</strong> : 오른쪽 화면의 위성지도의 줌레벨을 모니터 크기에 맞춰 조정합니다. 설정된 줌레벨은 이후 개별지도 저장시 반영됩니다. (디폴트 : 19)</li>
+            <li><strong>경계선 두께</strong> : 검색한 지번의 경계선의 두께를 설정합니다. (디폴트 : 2)</li>
+            <li><strong>저장 폴더 경로</strong> : <code>[선택]</code> 버튼을 눌러 생성된 지적도 이미지 및 PDF 파일이 보관될 로컬 폴더를 지정합니다. (기본 다운로드 경로로 본인 컴퓨터의 다운로드 폴더 내 <code>map</code> 폴더 사용 권장)</li>
+            <li><strong>주소 데이터 업로드</strong> : 주소 업로드 카드에 작업할 엑셀 파일을 마우스로 끌어다 놓거나(드롭), 클릭하여 선택합니다.</li>
+        </ol>
+
+        <h2>2. 통합지도 생성 및 저장</h2>
+        <ol>
+            <li>1개의 건물에 여러 지번이 걸쳐 있는 경우 한 화면에 해당 지번을 모두 표시하는 통합지도를 생성한 후, 브이월드 API에서 해당 지번의 꼭지점 위치를 호출하여 투명한 페이지 위에 필지의 경계선을 그립니다.</li>
+            <li>건물 지붕과 경계선 정렬이 필요하면 <strong>키보드 방향키</strong>로 보정 후 <strong>[저장]</strong> 버튼 또는 <strong>Enter</strong> 키를 눌러 저장하여 다음 단계로 진행합니다. (자세한 보정법은 상단의 '필수 유의 사항'을 참고하십시오.)</li>
+            <li>단순히 조회하거나 이동만 하려면 패널의 순번 입력창을 이용하거나 <code>[이전]</code>, <code>[다음]</code> 버튼(또는 PageUp / PageDown)을 클릭합니다.</li>
+        </ol>
+
+        <h2>3. 개별지도 생성 및 저장</h2>
+        <ol>
+            <li>통합지도 생성 시 저장된 경계선 보정값을 사용해 일괄적으로 업로드한 주소의 개별 지번을 검색하고 위성지도를 저장합니다.</li>
+            <li>줌레벨은 환경 설정 시 지정한 줌레벨로 자동 설정되어 캡처됩니다.</li>
+            <li><code>[🔄 클라우드 동기화]</code> 버튼을 누르면 다른 컴퓨터(작업자)가 수동 보정한 오프셋 파일들과 내 로컬 보정값을 실시간으로 병합하여 동기화합니다.</li>
+        </ol>
+
+        <h2>4. 통합 PDF 변환 방법</h2>
+        <ol>
+            <li>모든 건물의 통합지도와 개별지도 저장이 끝나면, <code>[PDF 변환]</code> 버튼을 누릅니다.</li>
+            <li>자동으로 동일 건물용도 및 건물순번별로 통합/개별 이미지들을 불러와서 다각형 면적 및 시계방향 알고리즘에 의해 자동 정렬(Stitching)되며, 여백 2cm가 부여된 중앙 정렬 고해상도 PDF 문서가 로컬에 생성됩니다.</li>
+        </ol>
+        
+        <button class="close-btn" onclick="window.close()">가이드 창 닫기</button>
+    </div>
+</body>
+</html>
+            `;
+            win.document.write(guideHTML);
+            win.document.close();
         });
     }
 
-    const btnGitSync = document.getElementById('btn-git-sync');
-    if (btnGitSync) {
-        btnGitSync.addEventListener('click', async () => {
-            const btn = btnGitSync;
-            btn.disabled = true;
-            btn.textContent = "🔄 동기화 중...";
+    // 보정값 리스트 엑셀 다운로드 클릭 이벤트
+    const btnExportExcel = document.getElementById('btn-export-excel');
+    if (btnExportExcel) {
+        btnExportExcel.addEventListener('click', () => {
+            let csvContent = "\ufeff"; // 한글 깨짐 방지 UTF-8 BOM
+            csvContent += "순번,시군구,전체 주소,X값,Y값\n";
+            
+            const escapeCSV = (val) => {
+                const str = String(val === undefined || val === null ? "" : val);
+                if (str.includes(",") || str.includes("\"") || str.includes("\n")) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+            
+            // 전체 주소 기준 가나다 오름차순 정렬
+            const sortedEntries = Object.entries(addressOffsets).sort((a, b) => {
+                return a[0].localeCompare(b[0], 'ko');
+            });
+            
+            let index = 1;
+            for (const [fullAddr, data] of sortedEntries) {
+                const tokens = fullAddr.split(/\s+/);
+                const sigungu = tokens.slice(0, 2).join(' '); // 시군구 추출 (도/시 + 구/군/시)
+                csvContent += `${index},${escapeCSV(sigungu)},${escapeCSV(fullAddr)},${data.x},${data.y}\n`;
+                index++;
+            }
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "경계선_보정값_리스트.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // 메인화면 수동 클라우드 동기화 버튼 클릭 이벤트
+    const btnGitSyncMain = document.getElementById('btn-git-sync-main');
+    if (btnGitSyncMain) {
+        btnGitSyncMain.addEventListener('click', async () => {
+            btnGitSyncMain.disabled = true;
+            const originalText = btnGitSyncMain.textContent;
+            btnGitSyncMain.textContent = "🔄 동기화 중...";
             try {
                 await syncOffsetsFromGitHub();
-                alert("GitHub 클라우드 오프셋 데이터 동기화 및 병합이 완료되었습니다!");
+                alert("✓ GitHub 클라우드 오프셋 데이터 동기화 및 병합이 완료되었습니다!");
             } catch (err) {
-                alert("동기화 실패: " + err.message);
+                alert("❌ 동기화 실패: " + err.message);
             } finally {
-                btn.disabled = false;
-                btn.textContent = "🔄 지금 동기화";
+                btnGitSyncMain.disabled = false;
+                btnGitSyncMain.textContent = originalText;
             }
         });
     }
@@ -5763,16 +5932,31 @@ async function checkPermissionAndRun(runMode) {
         const storedHandle = await getDBValue('dirHandle');
         if (storedHandle) {
             dirHandle = storedHandle;
-            const pathStr = localStorage.getItem('saveFolderDisplay') || `C:\\Users\\dudo0\\Downloads\\${dirHandle.name}`;
+            let pathStr = localStorage.getItem('saveFolderDisplay');
+            if (pathStr && pathStr.includes('dudo0')) {
+                pathStr = null;
+                localStorage.removeItem('saveFolderDisplay');
+            }
+            if (!pathStr) {
+                pathStr = `C:\\Users\\User\\Downloads\\${dirHandle.name}`; // Fallback
+                try {
+                    const resp = await fetch(`/api/downloads-path?folder=${encodeURIComponent(dirHandle.name)}`);
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        if (json.path) pathStr = json.path;
+                    }
+                } catch(e) {}
+                localStorage.setItem('saveFolderDisplay', pathStr);
+            }
             const pEl = document.getElementById('save-folder-path');
             if (pEl) pEl.value = pathStr;
         } else {
             const pEl = document.getElementById('save-folder-path');
-            if (pEl) pEl.value = 'C:\\Users\\dudo0\\Downloads\\map';
+            if (pEl) pEl.value = '저장 경로를 설정해 주세요';
         }
     } catch(e) {
         const pEl = document.getElementById('save-folder-path');
-        if (pEl) pEl.value = 'C:\\Users\\dudo0\\Downloads\\map';
+        if (pEl) pEl.value = '저장 경로를 설정해 주세요';
     }
 
     showLog('지적도 자동 경계 캡처 도구 준비됨', 'success');
@@ -5824,7 +6008,7 @@ async function checkPermissionAndRun(runMode) {
             offsetX = parseFloat(localStorage.getItem('mapOffsetX') || '0');
             offsetY = parseFloat(localStorage.getItem('mapOffsetY') || '14');
             strokeWeight = parseInt(localStorage.getItem('mapStrokeWeight') || '4');
-            individualZoom = parseInt(localStorage.getItem('mapIndividualZoom') || '18');
+            individualZoom = parseInt(localStorage.getItem('mapIndividualZoom') || '19');
             
             document.getElementById('off-x').value = offsetX;
             document.getElementById('off-y').value = offsetY;
