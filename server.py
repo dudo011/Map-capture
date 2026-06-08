@@ -131,17 +131,28 @@ try:
 except Exception as e:
     print(f"Could not auto-update index.html from GitHub: {e}")
 
-# 2. Fallback: If update failed and index.html is missing locally, extract the bundled copy
-if not os.path.exists('index.html') or not update_success:
-    if getattr(sys, 'frozen', False):
-        try:
-            bundled_path = os.path.join(sys._MEIPASS, 'index.html')
-            if os.path.exists(bundled_path):
-                if not os.path.exists('index.html'):
-                    shutil.copy(bundled_path, 'index.html')
-                    print("Extracted bundled index.html to local directory.")
-        except Exception as err:
-            print(f"Failed to extract bundled index.html: {err}")
+# 2. Fallback: If update failed or is skipped, extract the bundled copy if it is newer
+if getattr(sys, 'frozen', False):
+    try:
+        bundled_path = os.path.join(sys._MEIPASS, 'index.html')
+        if os.path.exists(bundled_path):
+            def get_version(path):
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        c = f.read()
+                    m = re.search(r'지적도 캡처 자동화 v(\d+\.\d+)', c)
+                    return float(m.group(1)) if m else 0.0
+                except:
+                    return 0.0
+            
+            local_ver = get_version('index.html')
+            bundled_ver = get_version(bundled_path)
+            
+            if not os.path.exists('index.html') or bundled_ver > local_ver:
+                shutil.copy(bundled_path, 'index.html')
+                print(f"Extracted bundled index.html (v{bundled_ver}) to local directory (local was v{local_ver}).")
+    except Exception as err:
+        print(f"Failed to extract bundled index.html: {err}")
 
 import threading
 import webbrowser
