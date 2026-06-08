@@ -108,14 +108,17 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 import sys
 import urllib.request
 
+import shutil
+
 if getattr(sys, 'frozen', False):
     exe_dir = os.path.dirname(sys.executable)
 else:
     exe_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(exe_dir)
 
-# Auto-update index.html from GitHub on startup
+# 1. Try to auto-update index.html from GitHub
 print("Checking for index.html updates from GitHub...")
+update_success = False
 try:
     url = "https://raw.githubusercontent.com/dudo011/map-capture/main/index.html"
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -124,8 +127,21 @@ try:
         with open('index.html', 'wb') as f:
             f.write(html_content)
     print("Successfully updated index.html to the latest version from GitHub.")
+    update_success = True
 except Exception as e:
-    print(f"Could not auto-update index.html (using local cache if available): {e}")
+    print(f"Could not auto-update index.html from GitHub: {e}")
+
+# 2. Fallback: If update failed and index.html is missing locally, extract the bundled copy
+if not os.path.exists('index.html') or not update_success:
+    if getattr(sys, 'frozen', False):
+        try:
+            bundled_path = os.path.join(sys._MEIPASS, 'index.html')
+            if os.path.exists(bundled_path):
+                if not os.path.exists('index.html'):
+                    shutil.copy(bundled_path, 'index.html')
+                    print("Extracted bundled index.html to local directory.")
+        except Exception as err:
+            print(f"Failed to extract bundled index.html: {err}")
 
 import threading
 import webbrowser
