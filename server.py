@@ -148,9 +148,12 @@ if getattr(sys, 'frozen', False):
             local_ver = get_version('index.html')
             bundled_ver = get_version(bundled_path)
             
-            if not os.path.exists('index.html') or bundled_ver > local_ver:
+            print(f"Local index.html version: v{local_ver}")
+            print(f"Bundled index.html version: v{bundled_ver}")
+            
+            if not os.path.exists('index.html') or bundled_ver != local_ver:
                 shutil.copy(bundled_path, 'index.html')
-                print(f"Extracted bundled index.html (v{bundled_ver}) to local directory (local was v{local_ver}).")
+                print(f"-> Overwrote local index.html with bundled v{bundled_ver} (local was v{local_ver}).")
     except Exception as err:
         print(f"Failed to extract bundled index.html: {err}")
 
