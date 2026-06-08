@@ -229,9 +229,10 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <h2 class="ct">주소 업로드</h2>
         </div>
         <div class="row" style="gap: 6px;">
-            <button class="btn bg" id="btn-tpl" title="샘플 엑셀 다운로드" style="flex: 1; padding: 10px; font-weight: 600; font-size: 14.5px; height: 42px;">양식 다운로드</button>
-            <div id="dropzone" onclick="document.getElementById('file-input').click()" style="flex: 1; height: 42px; display: flex; align-items: center; justify-content: center; border: 1.5px dashed var(--border); border-radius: 8px; background: rgba(255,255,255,0.02); cursor: pointer; transition: all .2s; padding: 0;">
-                <span style="font-size: 14.5px; font-weight: 600; color: var(--txt2);">엑셀 업로드</span>
+            <button class="btn" id="btn-tpl" title="샘플 엑셀 다운로드" style="flex: 0 0 90px; padding: 8px 6px; font-weight: 600; font-size: 12.5px; height: 42px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: var(--txt2);">양식<br>다운로드</button>
+            <div id="dropzone" onclick="document.getElementById('file-input').click()" style="flex: 1; height: 42px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3d8bff; border-radius: 8px; background: rgba(61,139,255,0.08); cursor: pointer; transition: all .2s; padding: 0 8px; gap: 6px;">
+                <span style="font-size: 18px;">📂</span>
+                <span style="font-size: 14px; font-weight: 700; color: #7ec0ff;">엑셀 업로드</span>
                 <!-- JS 에러 방지를 위해 숨김 처리된 텍스트 홀더 -->
                 <div style="display: none;">
                     <div class="dz-icon"></div>
@@ -247,14 +248,14 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
         </div>
         <!-- Action Buttons Row 1: 통합지도, 개별지도, 줌연속촬영 -->
         <div class="row" style="margin-top: 8px; gap: 5px;">
-            <button class="btn bs" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">통합<br>지도</button>
-            <button class="btn bp" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">개별<br>지도</button>
-            <button class="btn" id="btn-zoom-sequence" disabled style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a3a5c, #0d2a45); border: 1px solid #2a5a8c; color: #7ec8f4;">📸줌<br>연속촬영</button>
+            <button class="btn" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">통합<br>지도</button>
+            <button class="btn" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">개별<br>지도</button>
+            <button class="btn" id="btn-zoom-sequence" disabled style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">줌<br>연속촬영</button>
         </div>
         <!-- Action Buttons Row 2: PDF변환, PDF통합 -->
         <div class="row" style="margin-top: 5px; gap: 5px;">
-            <button class="btn bs" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center;">PDF 변환</button>
-            <button class="btn bp" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center;">PDF 통합</button>
+            <button class="btn" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3a1a5c, #2a0d45); border: 1px solid #7a3abf; color: #c89eff;">PDF 변환</button>
+            <button class="btn" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3a1a5c, #2a0d45); border: 1px solid #7a3abf; color: #c89eff;">PDF 통합</button>
         </div>
     </div>
 </div>
@@ -7021,7 +7022,14 @@ async function checkPermissionAndRun(runMode) {
             <li>단일 지번(주소 1개)만 연결된 건물은 통합지도로 완전 커버가 가능하므로 개별 캡처를 지능적으로 건너뜁니다.</li>
         </ol>
 
-        <h2>4. PDF 변환 및 통합 방법</h2>
+        <h2>4. 줌 연속촬영</h2>
+        <ol>
+            <li>특정 지번을 다양한 줌 레벨로 한 번에 저장하고 싶을 때 사용합니다. <strong>[줌 연속촬영]</strong> 버튼을 누르면 업로드한 모든 주소에 대해 줌 레벨 18, 19, 20, 21을 순서대로 자동 캡처합니다.</li>
+            <li>저장되는 파일명은 기본 개별지도 파일명 뒤에 <code>_줌18</code>, <code>_줌19</code>, <code>_줌20</code>, <code>_줌21</code> 접미사가 붙어 구분됩니다. (예: <code>공장_1_검단동_512-3_줌19.png</code>)</li>
+            <li>기존에 저장된 경계선 보정값이 자동 적용되어 촬영됩니다.</li>
+        </ol>
+
+        <h2>5. PDF 변환 및 통합 방법</h2>
         <ol>
             <li>모든 건물의 통합지도와 개별지도 저장이 끝나면, <code>[PDF 변환]</code> 버튼을 눌러 개별 건물 단위 PDF들을 생성합니다. (폴더 내 전체 이미지를 스캔해 무제한 다중 페이지로 자동 빌드됩니다.)</li>
             <li>그 후 <code>[PDF 통합]</code> 버튼을 누르면, 동일한 건물 용도별(예: 변전소, 공장 등)로 생성된 PDF들을 건물 순번대로 깔끔하게 일렬로 묶어 최종 전체 통합 PDF 파일(예: <code>변전소_통합.pdf</code>)을 생성합니다.</li>
