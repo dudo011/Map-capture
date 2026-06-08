@@ -104,8 +104,28 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(404)
 
-# Always serve from the directory containing server.py to avoid path issues
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+# Serve from directory of the script or compiled exe
+import sys
+import urllib.request
+
+if getattr(sys, 'frozen', False):
+    exe_dir = os.path.dirname(sys.executable)
+else:
+    exe_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(exe_dir)
+
+# Auto-update index.html from GitHub on startup
+print("Checking for index.html updates from GitHub...")
+try:
+    url = "https://raw.githubusercontent.com/dudo011/map-capture/main/index.html"
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=5) as response:
+        html_content = response.read()
+        with open('index.html', 'wb') as f:
+            f.write(html_content)
+    print("Successfully updated index.html to the latest version from GitHub.")
+except Exception as e:
+    print(f"Could not auto-update index.html (using local cache if available): {e}")
 
 with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
     print(f"Custom server serving at port {PORT}")
