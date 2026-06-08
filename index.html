@@ -364,7 +364,7 @@ const EMBEDDED_OFFSETS = {
         "y": 17,
         "lon": 128.61047176965928,
         "lat": 35.913443033595144,
-        "timestamp": 1780832098165
+        "timestamp": 1780916855018
     },
     "대구광역시 북구 검단동 512-3": {
         "x": -12,
@@ -6405,17 +6405,21 @@ async function convertImagesToPDF() {
                 }
             });
 
-            // 4. Combine into final sorted list
+            // 4. Combine into final sorted list (Skip individual map if it is identical to the combined map)
             const finalFiles = [];
             if (group.combined) {
                 finalFiles.push(group.combined);
             }
-            if (largestItem) {
-                finalFiles.push(largestItem.fileHandle);
+            if (group.combined && group.individuals.length === 1) {
+                // Skip the single individual map since it is identical to the combined map
+            } else {
+                if (largestItem) {
+                    finalFiles.push(largestItem.fileHandle);
+                }
+                remainingItems.forEach(item => {
+                    finalFiles.push(item.fileHandle);
+                });
             }
-            remainingItems.forEach(item => {
-                finalFiles.push(item.fileHandle);
-            });
 
             // 5. Load images
             const imgs = [];
