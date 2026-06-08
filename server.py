@@ -127,6 +127,19 @@ try:
 except Exception as e:
     print(f"Could not auto-update index.html (using local cache if available): {e}")
 
+import threading
+import webbrowser
+
+def open_browser():
+    try:
+        print("Opening web browser automatically...")
+        webbrowser.open(f"http://localhost:{PORT}/index.html")
+    except Exception as e:
+        print(f"Failed to open browser automatically: {e}")
+
+# Start a timer to open the browser 1.2 seconds after launching the server
+threading.Timer(1.2, open_browser).start()
+
 with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
     print(f"Custom server serving at port {PORT}")
     httpd.serve_forever()
