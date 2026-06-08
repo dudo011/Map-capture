@@ -1,5 +1,4 @@
 build/
 dist/
 *.spec
-server.exe
 __pycache__/
