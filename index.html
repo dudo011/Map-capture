@@ -198,7 +198,7 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             </div>
             <div class="fg" style="flex: 0 0 120px;">
                 <label>경계선 두께(px)</label>
-                <input type="number" id="stroke-weight" value="4" min="1" max="15" step="1" style="text-align: center; background: rgba(255,255,255,0.05); border-color: var(--border); color: var(--txt);">
+                <input type="number" id="stroke-weight" value="2" min="1" max="15" step="1" style="text-align: center; background: rgba(255,255,255,0.05); border-color: var(--border); color: var(--txt);">
             </div>
             <div class="fg" style="flex: 1;">
                 <label>&nbsp;</label>
@@ -245,12 +245,16 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <div class="fi-nm" id="fi-nm"></div>
             <div class="fi-ct" id="fi-ct"></div>
         </div>
-        <!-- Action Buttons (1x4 Row) -->
+        <!-- Action Buttons Row 1: 통합지도, 개별지도, 줌연속촬영 -->
         <div class="row" style="margin-top: 8px; gap: 5px;">
             <button class="btn bs" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">통합<br>지도</button>
             <button class="btn bp" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">개별<br>지도</button>
-            <button class="btn bs" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">PDF<br>변환</button>
-            <button class="btn bp" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center;">PDF<br>통합</button>
+            <button class="btn" id="btn-zoom-sequence" disabled style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a3a5c, #0d2a45); border: 1px solid #2a5a8c; color: #7ec8f4;">📸줌<br>연속촬영</button>
+        </div>
+        <!-- Action Buttons Row 2: PDF변환, PDF통합 -->
+        <div class="row" style="margin-top: 5px; gap: 5px;">
+            <button class="btn bs" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center;">PDF 변환</button>
+            <button class="btn bp" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center;">PDF 통합</button>
         </div>
     </div>
 </div>
@@ -3469,7 +3473,7 @@ let curIdx            = 0;
 let batchStatus       = 'IDLE'; // IDLE | RUNNING | PAUSED | STOPPED
 let offsetX           = parseFloat(localStorage.getItem('mapOffsetX') ?? '0')   || 0;
 let offsetY           = parseFloat(localStorage.getItem('mapOffsetY') ?? '14') || 14;
-let strokeWeight      = parseInt(localStorage.getItem('mapStrokeWeight') ?? '4') || 4;
+let strokeWeight      = parseInt(localStorage.getItem('mapStrokeWeight') ?? '2') || 2;
 let individualZoom    = 19;
 
 let doneCount         = 0;
@@ -5239,6 +5243,7 @@ async function runBatch(mode) {
     const hasData = buildingQueue.length > 0;
     document.getElementById('btn-start-combined').disabled = !hasData || !naverMap;
     document.getElementById('btn-start-individual').disabled = !hasData || !naverMap;
+    document.getElementById('btn-zoom-sequence').disabled = !hasData || !naverMap;
     if (btnPause) btnPause.disabled = true;
     if (btnStop) btnStop.disabled  = true;
     
@@ -6109,6 +6114,7 @@ async function autoInitAPI() {
         const hasData = buildingQueue.length > 0;
         document.getElementById('btn-start-combined').disabled = !hasData;
         document.getElementById('btn-start-individual').disabled = !hasData;
+        document.getElementById('btn-zoom-sequence').disabled = !hasData;
         
         showLog('API 초기화 완료! 기본 미리보기를 로드 중...', 'success');
         setTimeout(() => showDefaultPreview(), 800);
@@ -6152,6 +6158,7 @@ function handleFile(file) {
             if (naverMap) {
                 document.getElementById('btn-start-combined').disabled = false;
                 document.getElementById('btn-start-individual').disabled = false;
+                document.getElementById('btn-zoom-sequence').disabled = false;
             }
         } catch(e) { showLog(`파싱 오류: ${e.message}`, 'error'); }
     };
@@ -6578,6 +6585,7 @@ if (btnStop) {
         batchStatus = 'STOPPED';
         document.getElementById('btn-start-combined').disabled = false;
         document.getElementById('btn-start-individual').disabled = false;
+        document.getElementById('btn-zoom-sequence').disabled = false;
         if (btnPause) btnPause.disabled = true;
         btnStop.disabled  = true;
         showLog('중지 요청...', 'warn');
@@ -6606,9 +6614,36 @@ document.getElementById('off-y').addEventListener('change', e => {
     updateManualOffsetsDisplay();
 });
 document.getElementById('stroke-weight').addEventListener('change', e => {
-    strokeWeight = parseInt(e.target.value) || 4;
+    strokeWeight = parseInt(e.target.value) || 2;
     localStorage.setItem('mapStrokeWeight', strokeWeight);
     if (cachedGeometries.length) redrawCached();
+});
+
+// ==========================================
+// ZOOM SEQUENCE CAPTURE
+// ==========================================
+document.getElementById('btn-zoom-sequence').addEventListener('click', async () => {
+    if (batchStatus !== 'IDLE') { showLog('이미 실행 중입니다.', 'warn'); return; }
+    if (!buildingQueue.length) { showLog('엑셀 파일을 먼저 업로드해 주세요', 'error'); return; }
+    if (!naverMap) { showLog('API를 먼저 초기화해 주세요', 'error'); return; }
+
+    if (!dirHandle) {
+        alert('지도를 저장할 폴더를 먼저 선택해 주세요.');
+        await selectFolder();
+        if (!dirHandle) return;
+    }
+
+    const zoomLevels = [18, 19, 20, 21];
+
+    localStorage.setItem('buildingQueue', JSON.stringify(buildingQueue));
+    localStorage.setItem('buildingGroups', JSON.stringify(buildingGroups));
+    localStorage.setItem('buildingUsages', JSON.stringify(buildingUsages));
+    localStorage.setItem('mapOffsetX', offsetX);
+    localStorage.setItem('mapOffsetY', offsetY);
+    localStorage.setItem('mapStrokeWeight', strokeWeight);
+    localStorage.setItem('zoomSequenceLevels', JSON.stringify(zoomLevels));
+
+    window.open(window.location.origin + window.location.pathname + `?run=ZOOM_SEQUENCE&startIdx=0`, '_blank');
 });
 
 
@@ -6663,8 +6698,119 @@ function launchRunMode(runMode) {
         startManualCombinedCalibration();
     } else if (runMode === 'INDIVIDUAL') {
         startManualIndividualCalibration();
+    } else if (runMode === 'ZOOM_SEQUENCE') {
+        runZoomSequenceBatch();
     } else {
         runBatch(runMode);
+    }
+}
+
+async function runZoomSequenceBatch() {
+    const zoomLevels = JSON.parse(localStorage.getItem('zoomSequenceLevels') || '[18,19,20,21]');
+    const delayMs = parseInt(localStorage.getItem('delay') || '1500') || 1500;
+
+    batchStatus = 'RUNNING';
+    showLog(`줌연속촬영 시작: 줌레벨 [${zoomLevels.join(', ')}] / ${buildingQueue.length}개 건물`, 'info');
+
+    let doneTotal = 0;
+    let failTotal = 0;
+
+    for (let i = 0; i < buildingQueue.length; i++) {
+        if (batchStatus === 'STOPPED') break;
+
+        const bKey = buildingQueue[i];
+        const idx = bKey.indexOf('_');
+        const bNo = idx !== -1 ? bKey.substring(idx + 1) : bKey;
+        const addrs = buildingGroups[bKey] || [];
+
+        // Use only the first address of each building group as representative
+        for (const addr of addrs) {
+            if (batchStatus === 'STOPPED') break;
+
+            currentPreviewAddr = addr;
+
+            // Determine offset
+            let matchedOffset = null;
+            if (addressOffsets[addr]) {
+                matchedOffset = { x: addressOffsets[addr].x, y: addressOffsets[addr].y };
+            }
+            if (!matchedOffset) {
+                try {
+                    const tempCoords = await geocodeAddress(addr);
+                    const closest = findClosestCalibratedOffset(tempCoords.lon, tempCoords.lat);
+                    if (closest) matchedOffset = closest.offset;
+                } catch(e) {}
+            }
+            if (!matchedOffset) {
+                const region = getRegionPrefix(addr);
+                const regOffsets = getRegionalOffsets();
+                if (regOffsets[region]) matchedOffset = { x: regOffsets[region].x, y: regOffsets[region].y };
+            }
+            if (!matchedOffset) matchedOffset = { x: 0, y: 14 };
+
+            offsetX = matchedOffset.x;
+            offsetY = matchedOffset.y;
+            document.getElementById('off-x').value = offsetX;
+            document.getElementById('off-y').value = offsetY;
+
+            // Geocode and draw boundary
+            clearOverlays();
+            try {
+                const coords = await geocodeAddress(addr);
+                const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
+                const geometries = [];
+                (features || []).forEach(f => {
+                    if (f.geometry) {
+                        geometries.push(f.geometry);
+                        cachedGeometries.push(f.geometry);
+                    }
+                });
+
+                if (geometries.length === 0) {
+                    showLog(`경계 없음: ${addr}`, 'warn');
+                    continue;
+                }
+
+                redrawCached();
+
+                // For each zoom level, set zoom, wait, then capture
+                for (const zl of zoomLevels) {
+                    if (batchStatus === 'STOPPED') break;
+
+                    await centerOnGeometriesAndWait(zl);
+                    await sleep(delayMs);
+
+                    redrawCached();
+                    await sleep(100);
+
+                    const cleanAddr = addr.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_-]/g, '');
+                    const filename = `${bKey}_${cleanAddr}_줌${zl}.png`;
+
+                    showLog(`[줌연속촬영] ${addr} / 줌${zl} 캡처 중...`, 'info');
+                    const ok = await captureMap(filename);
+                    if (ok) {
+                        showLog(`✓ 줌${zl} 캡처 완료: ${filename}`, 'success');
+                        doneTotal++;
+                    } else {
+                        showLog(`✗ 줌${zl} 캡처 실패: ${addr}`, 'error');
+                        failTotal++;
+                    }
+                    await sleep(300);
+                }
+            } catch(e) {
+                showLog(`오류 (${addr}): ${e.message}`, 'warn');
+                failTotal++;
+            }
+        }
+    }
+
+    batchStatus = 'IDLE';
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('run')) {
+        setTimeout(() => {
+            alert(`줌연속촬영 완료!\n성공: ${doneTotal} / 실패: ${failTotal}`);
+            window.close();
+        }, 300);
     }
 }
 
@@ -7237,6 +7383,7 @@ async function checkPermissionAndRun(runMode) {
                 }
                 document.getElementById('btn-start-combined').disabled = false;
                 document.getElementById('btn-start-individual').disabled = false;
+                document.getElementById('btn-zoom-sequence').disabled = false;
                 showLog(`이전 세션 데이터 복원 완료: 건물 ${totalCount}개`, 'success');
             }
         } catch(e) {
@@ -7254,7 +7401,7 @@ async function checkPermissionAndRun(runMode) {
             buildingUsages = JSON.parse(localStorage.getItem('buildingUsages') || '{}');
             offsetX = parseFloat(localStorage.getItem('mapOffsetX') || '0');
             offsetY = parseFloat(localStorage.getItem('mapOffsetY') || '14');
-            strokeWeight = parseInt(localStorage.getItem('mapStrokeWeight') || '4');
+            strokeWeight = parseInt(localStorage.getItem('mapStrokeWeight') || '2');
             individualZoom = parseInt(localStorage.getItem('mapIndividualZoom') || '19');
             
             document.getElementById('off-x').value = offsetX;
