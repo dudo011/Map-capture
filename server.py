@@ -156,8 +156,8 @@ try:
 except Exception as e:
     print(f"Could not auto-update index.html from GitHub: {e}")
 
-# 2. Fallback: If update failed or is skipped, extract the bundled copy if it is newer
-if getattr(sys, 'frozen', False):
+# 2. Fallback: If GitHub update failed, always overwrite with the bundled copy
+if not update_success and getattr(sys, 'frozen', False):
     try:
         bundled_path = os.path.join(sys._MEIPASS, 'index.html')
         if os.path.exists(bundled_path):
@@ -169,16 +169,16 @@ if getattr(sys, 'frozen', False):
                     return float(m.group(1)) if m else 0.0
                 except:
                     return 0.0
-            
-            local_ver = get_version('index.html')
+
+            local_ver = get_version('index.html') if os.path.exists('index.html') else 0.0
             bundled_ver = get_version(bundled_path)
-            
+
             print(f"Local index.html version: v{local_ver}")
             print(f"Bundled index.html version: v{bundled_ver}")
-            
-            if not os.path.exists('index.html') or bundled_ver != local_ver:
-                shutil.copy(bundled_path, 'index.html')
-                print(f"-> Overwrote local index.html with bundled v{bundled_ver} (local was v{local_ver}).")
+
+            # Always overwrite local with bundled when GitHub update failed
+            shutil.copy(bundled_path, 'index.html')
+            print(f"-> Overwrote local index.html with bundled v{bundled_ver} (local was v{local_ver}).")
     except Exception as err:
         print(f"Failed to extract bundled index.html: {err}")
 
