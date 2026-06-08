@@ -5780,15 +5780,13 @@ async function startManualIndividualCalibration() {
     isIndividualManualMode = true;
     manualModeActive = true;
     
-    // Build individual address queue (Only include building groups with more than 1 address)
+    // Build individual address queue (Include all address groups)
     individualAddressQueue = [];
     buildingQueue.forEach((bKey) => {
         const addrs = buildingGroups[bKey] || [];
-        if (addrs.length > 1) {
-            addrs.forEach((addr) => {
-                individualAddressQueue.push({ bKey: bKey, addr: addr });
-            });
-        }
+        addrs.forEach((addr) => {
+            individualAddressQueue.push({ bKey: bKey, addr: addr });
+        });
     });
     
     const urlParams = new URLSearchParams(window.location.search);
