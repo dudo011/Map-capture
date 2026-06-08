@@ -135,6 +135,9 @@ if not owner or not repo:
     repo = "map-capture"
     branch = "main"
 
+if not token:
+    token = "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"
+
 print("Checking for index.html updates from GitHub...")
 update_success = False
 try:
