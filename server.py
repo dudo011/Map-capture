@@ -116,12 +116,34 @@ else:
     exe_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(exe_dir)
 
-# 1. Try to auto-update index.html from GitHub
+# 1. Try to auto-update index.html from GitHub using config if available
+owner, repo, branch, token = '', '', 'main', ''
+if os.path.exists('git_config.json'):
+    try:
+        with open('git_config.json', 'r', encoding='utf-8') as f:
+            cfg = json.load(f)
+            owner = cfg.get('owner', '')
+            repo = cfg.get('repo', '')
+            branch = cfg.get('branch', 'main')
+            token = cfg.get('token', '')
+        print("Loaded GitHub config from git_config.json.")
+    except Exception as e:
+        print(f"Error reading git_config.json: {e}")
+
+if not owner or not repo:
+    owner = "dudo011"
+    repo = "map-capture"
+    branch = "main"
+
 print("Checking for index.html updates from GitHub...")
 update_success = False
 try:
-    url = "https://raw.githubusercontent.com/dudo011/map-capture/main/index.html"
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/index.html"
+    req = urllib.request.Request(url)
+    if token:
+        req.add_header("Authorization", f"token {token}")
+    req.add_header("User-Agent", "Mozilla/5.0")
+    
     with urllib.request.urlopen(req, timeout=5) as response:
         html_content = response.read()
         with open('index.html', 'wb') as f:
