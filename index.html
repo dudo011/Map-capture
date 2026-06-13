@@ -252,7 +252,8 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             </button>
         </div>
         <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
-        <div class="fi" id="fi">
+        <!-- JS 에러 방지를 위해 숨김 처리된 상태 홀더 -->
+        <div class="fi" id="fi" style="display: none !important;">
             <div class="fi-nm" id="fi-nm"></div>
             <div class="fi-ct" id="fi-ct"></div>
         </div>
