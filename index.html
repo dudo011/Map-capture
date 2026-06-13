@@ -4312,6 +4312,41 @@ function getPolygonCentroid(feature) {
     } catch(e) { return null; }
 }
 
+function updateAddressInQueue(oldAddr, newAddr) {
+    if (!oldAddr || !newAddr || oldAddr === newAddr) return;
+    
+    let updated = false;
+    // 1. buildingGroups 내의 주소 업데이트
+    for (const bKey in buildingGroups) {
+        const addrs = buildingGroups[bKey];
+        if (addrs) {
+            const idx = addrs.indexOf(oldAddr);
+            if (idx !== -1) {
+                // 이미 newAddr이 있으면 중복 방지를 위해 기존 oldAddr 제거
+                const newIdx = addrs.indexOf(newAddr);
+                if (newIdx === -1) {
+                    addrs[idx] = newAddr;
+                } else {
+                    addrs.splice(idx, 1);
+                }
+                updated = true;
+            }
+        }
+    }
+    
+    if (updated) {
+        // 2. localStorage 업데이트
+        localStorage.setItem('buildingGroups', JSON.stringify(buildingGroups));
+        
+        // 3. 현재 미리보기 중인 주소와 일치하면 그것도 업데이트
+        if (currentPreviewAddr === oldAddr) {
+            currentPreviewAddr = newAddr;
+        }
+        
+        showLog(`[주소 정교화] "${oldAddr}" -> "${newAddr}"`, 'info');
+    }
+}
+
 async function geocodeAddress(addr) {
     async function executeGeocode(targetAddr) {
         const normalized = normalizeAddress(targetAddr);
@@ -4326,8 +4361,9 @@ async function geocodeAddress(addr) {
                 if (items?.length > 0) {
                     const lon = parseFloat(items[0].point.x);
                     const lat = parseFloat(items[0].point.y);
+                    const resolvedAddr = items[0].address?.parcel || items[0].title || targetAddr;
                     showLog(`지오코딩 성공(ADDRESS): ${lon.toFixed(5)}, ${lat.toFixed(5)}`, 'success');
-                    return { lon, lat };
+                    return { lon, lat, resolvedAddr };
                 }
             }
         } catch(e) {}
@@ -4342,8 +4378,9 @@ async function geocodeAddress(addr) {
                 if (features.length > 0) {
                     const centroid = getPolygonCentroid(features[0]);
                     if (centroid) {
+                        const resolvedAddr = features[0].properties?.addr || targetAddr;
                         showLog(`지오코딩 성공(본번검색): ${parts.dong} ${parts.bonbun}-${parts.bubun}`, 'success');
-                        return { lon: centroid.lon, lat: centroid.lat, _features: features };
+                        return { lon: centroid.lon, lat: centroid.lat, _features: features, resolvedAddr };
                     }
                 }
             }
@@ -4357,8 +4394,9 @@ async function geocodeAddress(addr) {
                 if (items?.length > 0) {
                     const lon = parseFloat(items[0].point.x);
                     const lat = parseFloat(items[0].point.y);
+                    const resolvedAddr = items[0].address?.parcel || items[0].title || targetAddr;
                     showLog(`지오코딩 성공(PLACE-주의): ${lon.toFixed(5)}, ${lat.toFixed(5)}`, 'warn');
-                    return { lon, lat };
+                    return { lon, lat, resolvedAddr };
                 }
             }
         } catch(e) {}
@@ -4367,52 +4405,60 @@ async function geocodeAddress(addr) {
     }
 
     let result = await executeGeocode(addr);
-    if (result) return result;
+    
+    if (!result) {
+        // Fallback 1: 행정구역 개칭 대응 (양북면 -> 문무대왕면 등)
+        const renamedMap = {
+            "양북면": "문무대왕면",
+            "문무대왕면": "양북면",
+            "영귀미면": "동면",
+            "동면": "영귀미면",
+            "도암면": "대관령면",
+            "대관령면": "도암면",
+            "이류면": "대소원면",
+            "대소원면": "이류면"
+        };
 
-    // Fallback 1: 행정구역 개칭 대응 (양북면 -> 문무대왕면 등)
-    const renamedMap = {
-        "양북면": "문무대왕면",
-        "문무대왕면": "양북면",
-        "영귀미면": "동면",
-        "동면": "영귀미면",
-        "도암면": "대관령면",
-        "대관령면": "도암면",
-        "이류면": "대소원면",
-        "대소원면": "이류면"
-    };
+        let fallbackAddr = null;
+        for (const [oldName, newName] of Object.entries(renamedMap)) {
+            if (addr.includes(oldName)) {
+                fallbackAddr = addr.replace(oldName, newName);
+                break;
+            }
+        }
 
-    let fallbackAddr = null;
-    for (const [oldName, newName] of Object.entries(renamedMap)) {
-        if (addr.includes(oldName)) {
-            fallbackAddr = addr.replace(oldName, newName);
-            break;
+        if (fallbackAddr) {
+            showLog(`[행정구역 명칭변경 폴백 시도] ${addr} -> ${fallbackAddr}`, 'warn');
+            result = await executeGeocode(fallbackAddr);
+            if (result) {
+                result._fallbackAddr = fallbackAddr;
+            }
         }
     }
 
-    if (fallbackAddr) {
-        showLog(`[행정구역 명칭변경 폴백 시도] ${addr} -> ${fallbackAddr}`, 'warn');
-        result = await executeGeocode(fallbackAddr);
-        if (result) {
-            result._fallbackAddr = fallbackAddr;
-            return result;
+    if (!result) {
+        // Fallback 2: 읍/면 승격 및 변경 대응 (면 <-> 읍)
+        let fallbackAddr = null;
+        if (addr.includes('면')) {
+            fallbackAddr = addr.replace('면', '읍');
+        } else if (addr.includes('읍')) {
+            fallbackAddr = addr.replace('읍', '면');
+        }
+
+        if (fallbackAddr) {
+            showLog(`[행정구역 변경 폴백 시도] ${addr} -> ${fallbackAddr}`, 'warn');
+            result = await executeGeocode(fallbackAddr);
+            if (result) {
+                result._fallbackAddr = fallbackAddr;
+            }
         }
     }
 
-    // Fallback 2: 읍/면 승격 및 변경 대응 (면 <-> 읍)
-    fallbackAddr = null;
-    if (addr.includes('면')) {
-        fallbackAddr = addr.replace('면', '읍');
-    } else if (addr.includes('읍')) {
-        fallbackAddr = addr.replace('읍', '면');
-    }
-
-    if (fallbackAddr) {
-        showLog(`[행정구역 변경 폴백 시도] ${addr} -> ${fallbackAddr}`, 'warn');
-        result = await executeGeocode(fallbackAddr);
-        if (result) {
-            result._fallbackAddr = fallbackAddr;
-            return result;
+    if (result) {
+        if (result.resolvedAddr && result.resolvedAddr !== addr) {
+            updateAddressInQueue(addr, result.resolvedAddr);
         }
+        return result;
     }
 
     throw new Error(`주소 검색 실패: ${addr}`);
@@ -4962,7 +5008,7 @@ async function processBuildingCombined(bKey) {
     const usage = idx !== -1 ? bKey.substring(0, idx) : '';
     const bNo = idx !== -1 ? bKey.substring(idx + 1) : bKey;
     const addrs = buildingGroups[bKey] || [];
-    const firstAddr = addrs[0] || '';
+    let firstAddr = addrs[0] || '';
     currentPreviewAddr = firstAddr;
     
     // Determine offset for combined address group
@@ -4981,6 +5027,10 @@ async function processBuildingCombined(bKey) {
     if (!matchedOffset && firstAddr) {
         try {
             const tempCoords = await geocodeAddress(firstAddr);
+            if (tempCoords.resolvedAddr) {
+                firstAddr = tempCoords.resolvedAddr;
+                if (addrs[0] !== firstAddr) addrs[0] = firstAddr;
+            }
             const closest = findClosestCalibratedOffset(tempCoords.lon, tempCoords.lat);
             if (closest) {
                 matchedOffset = closest.offset;
@@ -5020,10 +5070,17 @@ async function processBuildingCombined(bKey) {
     
     let hasGeom = false;
     let groupCoords = [];
-    for (const addr of addrs) {
+    for (let i = 0; i < addrs.length; i++) {
         if (batchStatus === 'STOPPED') break;
+        let addr = addrs[i];
         try {
             const coords   = await geocodeAddress(addr);
+            
+            if (coords.resolvedAddr && coords.resolvedAddr !== addr) {
+                addrs[i] = coords.resolvedAddr;
+                addr = coords.resolvedAddr;
+            }
+            
             const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
             
             const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
@@ -5117,7 +5174,7 @@ async function processBuildingIndividual(bKey) {
     let successCount = 0;
     for (let i = 0; i < addrs.length; i++) {
         if (batchStatus === 'STOPPED') break;
-        const addr = addrs[i];
+        let addr = addrs[i];
         currentPreviewAddr = addr;
         
         // Auto load regional offset
@@ -5134,6 +5191,10 @@ async function processBuildingIndividual(bKey) {
         if (!matchedOffset) {
             try {
                 const tempCoords = await geocodeAddress(addr);
+                if (tempCoords.resolvedAddr) {
+                    addrs[i] = tempCoords.resolvedAddr;
+                    addr = tempCoords.resolvedAddr;
+                }
                 const closest = findClosestCalibratedOffset(tempCoords.lon, tempCoords.lat);
                 if (closest) {
                     matchedOffset = closest.offset;
@@ -5170,6 +5231,12 @@ async function processBuildingIndividual(bKey) {
         clearOverlays();
         try {
             const coords   = await geocodeAddress(addr);
+            if (coords.resolvedAddr && coords.resolvedAddr !== addr) {
+                addrs[i] = coords.resolvedAddr;
+                addr = coords.resolvedAddr;
+                document.getElementById('sb-addr').textContent = addr;
+            }
+            
             const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
             
             const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
@@ -5389,10 +5456,17 @@ async function loadManualBuilding(idx) {
     
     let hasGeom = false;
     let groupCoords = [];
-    for (const addr of addrs) {
+    for (let i = 0; i < addrs.length; i++) {
+        let addr = addrs[i];
         try {
             const coords = await geocodeAddress(addr);
             if (mySessionId !== activeLoadSessionId) return;
+            
+            if (coords.resolvedAddr && coords.resolvedAddr !== addr) {
+                addrs[i] = coords.resolvedAddr;
+                addr = coords.resolvedAddr;
+            }
+            
             const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
             if (mySessionId !== activeLoadSessionId) return;
             const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
@@ -5794,12 +5868,22 @@ async function loadManualAddress(idx) {
     try {
         const coords = await geocodeAddress(addr);
         if (mySessionId !== activeLoadSessionId) return;
+        
+        let actualAddr = addr;
+        if (coords.resolvedAddr && coords.resolvedAddr !== addr) {
+            updateAddressInQueue(addr, coords.resolvedAddr);
+            item.addr = coords.resolvedAddr;
+            actualAddr = coords.resolvedAddr;
+            document.getElementById('manual-addr').textContent = actualAddr;
+            document.getElementById('sb-addr').textContent = actualAddr;
+        }
+        
         currentPreviewAddrCoords = coords;
-        const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
+        const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || actualAddr);
         if (mySessionId !== activeLoadSessionId) return;
         const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
-        saveParcelCache(addr, metadata);
-        groupCoords.push({ addr, lon: coords.lon, lat: coords.lat, area: metadata.area || 0 });
+        saveParcelCache(actualAddr, metadata);
+        groupCoords.push({ addr: actualAddr, lon: coords.lon, lat: coords.lat, area: metadata.area || 0 });
         (features || []).forEach(f => {
             if (f.geometry) {
                 cachedGeometries.push(f.geometry);
@@ -6100,7 +6184,7 @@ async function previewBuilding(bKey) {
     const mySessionId = ++activeLoadSessionId;
     clearOverlays();
     const addrs = buildingGroups[bKey] || [];
-    const firstAddr = addrs[0] || '';
+    let firstAddr = addrs[0] || '';
     currentPreviewAddr = firstAddr;
 
     // Extract bNo and usage from bKey
@@ -6125,6 +6209,19 @@ async function previewBuilding(bKey) {
     document.getElementById('sb-bno').textContent  = bNo;
     showLog(`미리보기: ${bKey}`, 'info');
     
+    // firstAddr에 대해 미리 지오코딩을 시도하여 정식 주소로 업데이트
+    if (firstAddr) {
+        try {
+            const cTemp = await geocodeAddress(firstAddr);
+            if (cTemp && cTemp.resolvedAddr) {
+                firstAddr = cTemp.resolvedAddr;
+                if (addrs[0] !== firstAddr) {
+                    addrs[0] = firstAddr;
+                }
+            }
+        } catch(e) {}
+    }
+
     const basePrefix = bKey;
     const labelEl = document.getElementById('map-label');
     
@@ -6136,11 +6233,28 @@ async function previewBuilding(bKey) {
         <div style="font-size: 16px; font-weight: bold; color: #ffffff;">${labelLines[1]} (${addrs.length}개 필지)</div>
     `;
 
-    for (const addr of addrs) {
+    for (let i = 0; i < addrs.length; i++) {
+        let addr = addrs[i];
         document.getElementById('sb-addr').textContent = addr;
         try {
             const c = await geocodeAddress(addr);
             if (mySessionId !== activeLoadSessionId) return;
+            
+            if (c.resolvedAddr && c.resolvedAddr !== addr) {
+                addrs[i] = c.resolvedAddr;
+                addr = c.resolvedAddr;
+                document.getElementById('sb-addr').textContent = addr;
+                // 첫번째 주소가 도중에 변경된 경우 지도 레이블 갱신
+                if (i === 0) {
+                    const newLabelLines = splitAddress(addr);
+                    labelEl.innerHTML = `
+                        <div style="font-size: 14px; color: var(--accent); margin-bottom: 4px;">${basePrefix}</div>
+                        <div style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;">${newLabelLines[0]}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #ffffff;">${newLabelLines[1]} (${addrs.length}개 필지)</div>
+                    `;
+                }
+            }
+
             const f = await getParcelBoundary(c.lon, c.lat, c._features, c._fallbackAddr || addr);
             if (mySessionId !== activeLoadSessionId) return;
             (f||[]).forEach(ft => {
@@ -7019,12 +7133,13 @@ async function runZoomSequenceBatch() {
         const addrs = buildingGroups[bKey] || [];
 
         // Use only the first address of each building group as representative
-        for (const addr of addrs) {
+        for (let j = 0; j < addrs.length; j++) {
             if (batchStatus === 'STOPPED') break;
             while (batchStatus === 'PAUSED') await sleep(400);
             if (batchStatus === 'STOPPED') break;
             if (mySessionId !== activeLoadSessionId) return;
 
+            let addr = addrs[j];
             currentPreviewAddr = addr;
 
             // Determine offset
@@ -7036,6 +7151,10 @@ async function runZoomSequenceBatch() {
                 try {
                     const tempCoords = await geocodeAddress(addr);
                     if (mySessionId !== activeLoadSessionId) return;
+                    if (tempCoords.resolvedAddr) {
+                        addrs[j] = tempCoords.resolvedAddr;
+                        addr = tempCoords.resolvedAddr;
+                    }
                     const closest = findClosestCalibratedOffset(tempCoords.lon, tempCoords.lat);
                     if (closest) matchedOffset = closest.offset;
                 } catch(e) {}
@@ -7057,6 +7176,12 @@ async function runZoomSequenceBatch() {
             try {
                 const coords = await geocodeAddress(addr);
                 if (mySessionId !== activeLoadSessionId) return;
+                
+                if (coords.resolvedAddr && coords.resolvedAddr !== addr) {
+                    addrs[j] = coords.resolvedAddr;
+                    addr = coords.resolvedAddr;
+                }
+
                 const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
                 if (mySessionId !== activeLoadSessionId) return;
                 const geometries = [];
