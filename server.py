@@ -138,6 +138,9 @@ def open_browser():
 # Start a timer to open the browser 1.2 seconds after launching the server
 threading.Timer(1.2, open_browser).start()
 
-with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
+class ThreadingHTTPServer(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+
+with ThreadingHTTPServer(("", PORT), MyHandler) as httpd:
     print(f"Custom server serving at port {PORT}")
     httpd.serve_forever()
