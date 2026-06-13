@@ -256,16 +256,16 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <div class="fi-nm" id="fi-nm"></div>
             <div class="fi-ct" id="fi-ct"></div>
         </div>
-        <!-- Action Buttons Row 1: 통합지도, 개별지도, 줌연속촬영 -->
+        <!-- Action Buttons Row 1: 통합지도, 개별지도, PDF변환, PDF통합 -->
         <div class="row" style="margin-top: 8px; gap: 5px;">
-            <button class="btn" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">통합<br>지도</button>
-            <button class="btn" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">개별<br>지도</button>
-            <button class="btn" id="btn-zoom-sequence" disabled style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">줌<br>연속촬영</button>
+            <button class="btn" id="btn-start-combined" disabled style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">통합<br>지도</button>
+            <button class="btn" id="btn-start-individual" disabled style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d4f3c, #0a3d2e); border: 1px solid #1a8c64; color: #4dffc3;">개별<br>지도</button>
+            <button class="btn" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3a1a5c, #2a0d45); border: 1px solid #7a3abf; color: #c89eff;">PDF<br>변환</button>
+            <button class="btn" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13px; white-space: normal; line-height: 1.25; text-align: center; height: 44px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3a1a5c, #2a0d45); border: 1px solid #7a3abf; color: #c89eff;">PDF<br>통합</button>
         </div>
-        <!-- Action Buttons Row 2: PDF변환, PDF통합 -->
-        <div class="row" style="margin-top: 5px; gap: 5px;">
-            <button class="btn" id="btn-pdf" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3a1a5c, #2a0d45); border: 1px solid #7a3abf; color: #c89eff;">PDF 변환</button>
-            <button class="btn" id="btn-pdf-merge" style="flex: 1; padding: 6px 2px; font-size: 13.5px; white-space: normal; line-height: 1.25; text-align: center; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3a1a5c, #2a0d45); border: 1px solid #7a3abf; color: #c89eff;">PDF 통합</button>
+        <!-- Action Buttons Row 2: 줌 연속촬영 -->
+        <div style="margin-top: 5px; width: 100%;">
+            <button class="btn" id="btn-zoom-sequence" disabled style="width: 100%; padding: 8px 6px; font-weight: 700; height: 42px; font-size: 13.5px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #c1121f, #780000); border: 1px solid #c1121f; color: #ffadad; gap: 6px;">⚡ 줌 연속촬영 (자동 캡처 & PDF 변환)</button>
         </div>
     </div>
 </div>
@@ -6829,7 +6829,7 @@ function getBuildingPrefix(filename) {
     return parts[0];
 }
 
-async function convertImagesToPDF() {
+async function convertImagesToPDF(targetBKey = null) {
     if (!dirHandle) {
         alert('지도가 저장된 폴더를 먼저 선택해 주세요.');
         await selectFolder();
@@ -6858,6 +6858,10 @@ async function convertImagesToPDF() {
         const files = [];
         for await (const entry of dirHandle.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.png')) {
+                if (targetBKey) {
+                    const prefix = getBuildingPrefix(entry.name);
+                    if (prefix !== targetBKey) continue;
+                }
                 files.push(entry);
             }
         }
@@ -7162,11 +7166,17 @@ async function convertImagesToPDF() {
             pdfCount++;
         }
 
-        alert(`PDF 변환 완료!\n총 ${pdfCount}개의 PDF 파일이 생성되었습니다.`);
+        if (!targetBKey) {
+            alert(`PDF 변환 완료!\n총 ${pdfCount}개의 PDF 파일이 생성되었습니다.`);
+        } else {
+            showLog(`✓ [자동 PDF 변환 완료] ${targetBKey}.pdf 생성 완료`, 'success');
+        }
 
     } catch(e) {
         showLog(`PDF 변환 오류: ${e.message}`, 'error');
-        alert(`PDF 변환 중 오류가 발생했습니다: ${e.message}`);
+        if (!targetBKey) {
+            alert(`PDF 변환 중 오류가 발생했습니다: ${e.message}`);
+        }
     } finally {
         if (ov) {
             ov.classList.remove('on');
@@ -7354,7 +7364,25 @@ async function runZoomSequenceBatch() {
         const bNo = idx !== -1 ? bKey.substring(idx + 1) : bKey;
         const addrs = buildingGroups[bKey] || [];
 
-        // Use only the first address of each building group as representative
+        // 1. [통합지도 저장]
+        showLog(`[${bNo}] 줌연속촬영 - 통합지도 캡처 시작...`, 'info');
+        try {
+            const okCombined = await processBuildingCombined(bKey);
+            if (mySessionId !== activeLoadSessionId) return;
+            if (okCombined) {
+                showLog(`✓ [통합지도 완료] 건물 ${bNo} 통합 캡처 성공`, 'success');
+                doneTotal++;
+            } else {
+                showLog(`✗ 건물 ${bNo} 통합 캡처 실패`, 'error');
+                failTotal++;
+            }
+        } catch(err) {
+            showLog(`통합지도 저장 중 오류: ${err.message}`, 'error');
+            failTotal++;
+        }
+        await sleep(300);
+
+        // 2. [개별지도 줌레벨별 저장]
         for (let j = 0; j < addrs.length; j++) {
             if (batchStatus === 'STOPPED') break;
             while (batchStatus === 'PAUSED') await sleep(400);
@@ -7468,13 +7496,23 @@ async function runZoomSequenceBatch() {
                 failTotal++;
             }
         }
+        
+        // 3. [PDF 즉시 변환 실행]
+        showLog(`[${bNo}] 줌연속촬영 - PDF 자동 변환 시작...`, 'info');
+        try {
+            await convertImagesToPDF(bKey);
+            if (mySessionId !== activeLoadSessionId) return;
+        } catch(err) {
+            showLog(`PDF 자동 변환 실패: ${err.message}`, 'error');
+        }
+        await sleep(500);
     }
 
     batchStatus = 'IDLE';
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('run')) {
         setTimeout(() => {
-            alert(`줌연속촬영 완료!\n성공: ${doneTotal} / 실패: ${failTotal}`);
+            alert(`줌연속촬영 및 PDF 변환이 완료되었습니다!\n총 ${buildingQueue.length}개 건물 PDF 빌드 성공.`);
             window.close();
         }, 300);
     }
