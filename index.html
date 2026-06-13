@@ -6496,7 +6496,7 @@ function applyEditorData() {
     const tbody = document.getElementById('editor-tbody');
     const trs = tbody.querySelectorAll('tr');
     
-    const rows = [];
+    const allRows = [];
     trs.forEach(tr => {
         const tds = tr.querySelectorAll('td');
         if (tds.length >= 4) {
@@ -6504,16 +6504,22 @@ function applyEditorData() {
             const usage = selectEl ? selectEl.value.trim() : '';
             const bNo = tds[2].textContent.trim();
             const addr = tds[3].textContent.trim();
+            const chk = tds[0].querySelector('input[type="checkbox"]');
+            const isChecked = chk ? chk.checked : false;
             if (bNo && addr) {
-                rows.push({ usage, bNo, addr });
+                allRows.push({ usage, bNo, addr, isChecked });
             }
         }
     });
 
-    if (rows.length === 0) {
+    if (allRows.length === 0) {
         alert('입력된 데이터가 없거나 필수 값(건물번호, 주소)이 빠져 있습니다.');
         return;
     }
+
+    // 체크박스가 하나라도 선택되어 있다면 선택된 행들만 적용, 그렇지 않으면 전체 행 적용
+    const checkedRows = allRows.filter(r => r.isChecked);
+    const rows = checkedRows.length > 0 ? checkedRows : allRows;
 
     buildingGroups = {};
     buildingUsages = {};
@@ -6573,7 +6579,12 @@ function applyEditorData() {
 
     // Close editor modal
     document.getElementById('editor-ov').style.display = 'none';
-    showLog(`직접 편집 완료: ${totalCount}개 건물 적용됨`, 'success');
+    
+    if (checkedRows.length > 0) {
+        showLog(`직접 편집 완료: 선택한 ${rows.length}개 주소 적용됨`, 'success');
+    } else {
+        showLog(`직접 편집 완료: ${totalCount}개 건물 적용됨`, 'success');
+    }
 }
 
 // 주소 직접 검색 핸들러 구현
