@@ -4360,7 +4360,7 @@ async function geocodeAddress(addr) {
         const q    = encodeURIComponent(normalized);
         const base = `https://api.vworld.kr/req/search?service=search&request=search&version=2.0&crs=EPSG:4326&size=1&query=${q}&format=json&key=${CONFIG.VWORLD_API_KEY}`;
 
-        // 1차: ADDRESS 직접 검색
+        // 1차: ADDRESS 직접 검색 (지번)
         try {
             const d = await jsonpWithRetry(base + '&type=ADDRESS&category=parcel', 8000, 3, 200);
             if (d.response?.status === 'OK') {
@@ -4369,7 +4369,22 @@ async function geocodeAddress(addr) {
                     const lon = parseFloat(items[0].point.x);
                     const lat = parseFloat(items[0].point.y);
                     const resolvedAddr = items[0].address?.parcel || items[0].title || targetAddr;
-                    showLog(`지오코딩 성공(ADDRESS): ${lon.toFixed(5)}, ${lat.toFixed(5)}`, 'success');
+                    showLog(`지오코딩 성공(ADDRESS-지번): ${lon.toFixed(5)}, ${lat.toFixed(5)}`, 'success');
+                    return { lon, lat, resolvedAddr };
+                }
+            }
+        } catch(e) {}
+
+        // 1.5차: ADDRESS 직접 검색 (도로명)
+        try {
+            const d = await jsonpWithRetry(base + '&type=ADDRESS&category=road', 8000, 3, 200);
+            if (d.response?.status === 'OK') {
+                const items = d.response.result?.items;
+                if (items?.length > 0) {
+                    const lon = parseFloat(items[0].point.x);
+                    const lat = parseFloat(items[0].point.y);
+                    const resolvedAddr = items[0].address?.parcel || items[0].title || targetAddr;
+                    showLog(`지오코딩 성공(ADDRESS-도로명): ${lon.toFixed(5)}, ${lat.toFixed(5)}`, 'success');
                     return { lon, lat, resolvedAddr };
                 }
             }
