@@ -4224,7 +4224,7 @@ const _dongCache = {};
 
 // 한국 지번 주소 파싱: "대구광역시 북구 검단동 512-3" → {prefix, dong, dongFull, bonbun, bubun}
 function parseKoreanAddr(addr) {
-    const m = addr.match(/^(.*?)\s+(\S+(?:동|면|리|가|읍))\s+(\d+)(?:-(\d+))?/);
+    const m = addr.trim().match(/^(.*?)\s+(\S+(?:동|면|리|가|읍))\s+(\d+)(?:\s*-\s*(\d+))?$/);
     if (!m) return null;
     let prefix = (m[1] || '').trim();
     let dong = m[2].trim();
@@ -6576,6 +6576,7 @@ function applyEditorData() {
 }
 
 // 주소 직접 검색 핸들러 구현
+// 주소 직접 검색 핸들러 구현
 async function handleDirectSearch() {
     const inputVal = document.getElementById('direct-search-input').value.trim();
     if (!inputVal) {
@@ -6589,6 +6590,39 @@ async function handleDirectSearch() {
         const resolved = coords.resolvedAddr || inputVal;
         
         document.getElementById('direct-search-input').value = resolved;
+        
+        // 1. 해당 주소에 저장된 보정값 또는 인접/지역 보정 적용
+        let matchedOffset = null;
+        if (addressOffsets[resolved]) {
+            matchedOffset = { x: addressOffsets[resolved].x, y: addressOffsets[resolved].y };
+            showLog(`[보정 자동 적용] ${resolved}: X=${matchedOffset.x}, Y=${matchedOffset.y}`, 'info');
+        }
+        if (!matchedOffset) {
+            try {
+                const closest = findClosestCalibratedOffset(coords.lon, coords.lat);
+                if (closest) {
+                    matchedOffset = closest.offset;
+                    showLog(`[인접 보정 자동 적용] ${resolved} -> 가장 가까운 지번 [${closest.address}]의 보정값(X=${matchedOffset.x}, Y=${matchedOffset.y})을 자동 적용합니다.`, 'info');
+                }
+            } catch(e) {}
+        }
+        if (!matchedOffset) {
+            const region = getRegionPrefix(resolved);
+            const regOffsets = getRegionalOffsets();
+            if (regOffsets[region]) {
+                matchedOffset = { x: regOffsets[region].x, y: regOffsets[region].y };
+                showLog(`[지역 보정 자동 적용] ${region}: X=${matchedOffset.x}, Y=${matchedOffset.y}`, 'info');
+            }
+        }
+        if (!matchedOffset) {
+            matchedOffset = { x: 0, y: 14 };
+        }
+        
+        offsetX = matchedOffset.x;
+        offsetY = matchedOffset.y;
+        document.getElementById('off-x').value = offsetX;
+        document.getElementById('off-y').value = offsetY;
+        updateRegionDisplay();
         
         if (naverMap) {
             naverMap.setCenter(new naver.maps.LatLng(coords.lat, coords.lon));
@@ -6605,7 +6639,6 @@ async function handleDirectSearch() {
             if (f.geometry) {
                 geometries.push(f.geometry);
                 cachedGeometries.push(f.geometry);
-                drawGeometry(f.geometry);
             }
         });
         
@@ -6620,6 +6653,9 @@ async function handleDirectSearch() {
                 <div style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;">${labelLines[0]}</div>
                 <div style="font-size: 16px; font-weight: bold; color: #ffffff;">${labelLines[1]}</div>
             `;
+            
+            // 보정된 오프셋 위치에 맞춰 캐시된 경계선 그리기
+            redrawCached();
         } else {
             showLog('경계선 데이터를 찾을 수 없습니다.', 'warn');
         }
@@ -6672,6 +6708,25 @@ async function handleDirectSearch() {
         
         document.getElementById('sb-bno').textContent = bNo;
         document.getElementById('sb-addr').textContent = resolved;
+        
+        // 2. 수동 보정 패널 활성화
+        const panel = document.getElementById('manual-calibration-panel');
+        if (panel) {
+            panel.style.display = 'flex';
+            document.getElementById('manual-bno').textContent = `건물번호: 검색 (직접)`;
+            document.getElementById('manual-addr').textContent = resolved;
+            updateManualOffsetsDisplay();
+            
+            // 미세 보정값 저장 기능 바인딩
+            document.getElementById('btn-manual-save').onclick = async () => {
+                addressOffsets[resolved] = { x: offsetX, y: offsetY };
+                localStorage.setItem('addressOffsets', JSON.stringify(addressOffsets));
+                showLog(`[보정값 저장] ${resolved}: X=${offsetX}, Y=${offsetY}`, 'success');
+            };
+            
+            panel._groupCoords = [{ addr: resolved, lon: coords.lon, lat: coords.lat, area: 0 }];
+            panel._repAddr = resolved;
+        }
         
     } catch(e) {
         showLog(`검색 실패: ${e.message}`, 'error');
