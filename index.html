@@ -175,8 +175,8 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
         <div style="display: flex; align-items: center; gap: 13px;">
             <div class="logo-icon">🗺</div>
             <div>
-                <h1>지적도 캡처 자동화 v1.2</h1>
-                <p>Release : 2026-06-09</p>
+                <h1>지적도 캡처 자동화 v1.3</h1>
+                <p>Release : 2026-06-13</p>
                 <p>Naver Map × Vworld 연동</p>
             </div>
         </div>
@@ -6346,11 +6346,22 @@ async function convertImagesToPDF() {
                 const cleanPart = fh.name.substring(basePrefix.length + 1, fh.name.length - 4);
                 const approxAddr = cleanPart.replace(/_/g, ' ');
                 
-                const cached = getParcelCache()[approxAddr];
+                // Parse zoom level if present (e.g. _줌18.png)
+                const zoomMatch = fh.name.match(/_줌(\d+)\.png$/);
+                const zoomLevel = zoomMatch ? parseInt(zoomMatch[1]) : null;
+                
+                let geocodeAddr = approxAddr;
+                if (zoomLevel) {
+                    geocodeAddr = approxAddr.substring(0, approxAddr.lastIndexOf(` 줌${zoomLevel}`));
+                }
+
+                const cached = getParcelCache()[geocodeAddr];
                 if (cached) {
                     polygonData.push({
                         fileHandle: fh,
                         address: approxAddr,
+                        geocodeAddress: geocodeAddr,
+                        zoomLevel: zoomLevel,
                         area: cached.area,
                         centroid: cached.centroid
                     });
@@ -6358,14 +6369,16 @@ async function convertImagesToPDF() {
                 }
 
                 try {
-                    const coords = await geocodeAddress(approxAddr);
-                    const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || approxAddr);
+                    const coords = await geocodeAddress(geocodeAddr);
+                    const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || geocodeAddr);
                     const metadata = calculateParcelMetadata(features, { lon: coords.lon, lat: coords.lat });
-                    saveParcelCache(approxAddr, metadata);
+                    saveParcelCache(geocodeAddr, metadata);
 
                     polygonData.push({
                         fileHandle: fh,
                         address: approxAddr,
+                        geocodeAddress: geocodeAddr,
+                        zoomLevel: zoomLevel,
                         area: metadata.area,
                         centroid: metadata.centroid
                     });
@@ -6374,58 +6387,100 @@ async function convertImagesToPDF() {
                     polygonData.push({
                         fileHandle: fh,
                         address: approxAddr,
+                        geocodeAddress: geocodeAddr,
+                        zoomLevel: zoomLevel,
                         area: 0,
                         centroid: { lon: 128.61065, lat: 35.91317 }
                     });
                 }
             }
 
-            // Sort logic:
-            // 1. Find item with largest area
-            let largestItem = null;
-            const validGeo = polygonData.filter(item => item.area > 0);
-            if (validGeo.length > 0) {
-                largestItem = validGeo.reduce((max, item) => item.area > max.area ? item : max, validGeo[0]);
+            // Group polygonData by geocodeAddress to handle zoom sequences for the same address
+            const addrGroups = {};
+            polygonData.forEach(item => {
+                if (!addrGroups[item.geocodeAddress]) {
+                    addrGroups[item.geocodeAddress] = [];
+                }
+                addrGroups[item.geocodeAddress].push(item);
+            });
+
+            // Sort items in each address group by zoomLevel ascending
+            Object.keys(addrGroups).forEach(addr => {
+                addrGroups[addr].sort((a, b) => {
+                    const za = a.zoomLevel || 0;
+                    const zb = b.zoomLevel || 0;
+                    return za - zb;
+                });
+            });
+
+            // Collect unique addresses with their dynamic areas/centroids
+            const uniqueAddrs = Object.keys(addrGroups).map(addr => {
+                const items = addrGroups[addr];
+                return {
+                    geocodeAddress: addr,
+                    area: items[0].area,
+                    centroid: items[0].centroid,
+                    items: items
+                };
+            });
+
+            // Sort unique addresses clockwise around their average centroid
+            // 1. Find unique address with largest area
+            let largestAddrItem = null;
+            const validUniqueGeo = uniqueAddrs.filter(item => item.area > 0);
+            if (validUniqueGeo.length > 0) {
+                largestAddrItem = validUniqueGeo.reduce((max, item) => item.area > max.area ? item : max, validUniqueGeo[0]);
             }
 
-            // 2. Compute average centroid of all parcels with valid coordinates
-            let sumLon = 0, sumLat = 0, validGeoCount = 0;
-            polygonData.forEach(item => {
+            // 2. Compute average centroid of all valid unique addresses
+            let sumLon = 0, sumLat = 0, validUniqueCount = 0;
+            uniqueAddrs.forEach(item => {
                 if (item.area > 0) {
                     sumLon += item.centroid.lon;
                     sumLat += item.centroid.lat;
-                    validGeoCount++;
+                    validUniqueCount++;
                 }
             });
-            const centerCentroid = validGeoCount > 0 
-                ? { lon: sumLon / validGeoCount, lat: sumLat / validGeoCount } 
+            const centerCentroid = validUniqueCount > 0 
+                ? { lon: sumLon / validUniqueCount, lat: sumLat / validUniqueCount } 
                 : { lon: 128.61065, lat: 35.91317 };
 
-            // 3. Sort remaining items clockwise around center centroid
-            const remainingItems = polygonData.filter(item => item !== largestItem);
-            remainingItems.sort((a, b) => {
+            // 3. Sort remaining unique addresses clockwise
+            const remainingUnique = uniqueAddrs.filter(item => item !== largestAddrItem);
+            remainingUnique.sort((a, b) => {
                 if (a.area > 0 && b.area > 0) {
                     const angleA = Math.atan2(a.centroid.lat - centerCentroid.lat, a.centroid.lon - centerCentroid.lon);
                     const angleB = Math.atan2(b.centroid.lat - centerCentroid.lat, b.centroid.lon - centerCentroid.lon);
                     return angleB - angleA; // clockwise sorting
                 } else {
-                    return a.address.localeCompare(b.address);
+                    return a.geocodeAddress.localeCompare(b.geocodeAddress);
                 }
             });
 
-            // 4. Combine into final sorted list (Skip individual map if it is identical to the combined map)
+            // 4. Combine into final sorted list of files
             const finalFiles = [];
             if (group.combined) {
                 finalFiles.push(group.combined);
             }
-            if (group.combined && group.individuals.length === 1) {
+
+            const totalIndividualFilesCount = uniqueAddrs.reduce((sum, item) => sum + item.items.length, 0);
+
+            if (group.combined && totalIndividualFilesCount === 1) {
                 // Skip the single individual map since it is identical to the combined map
             } else {
-                if (largestItem) {
-                    finalFiles.push(largestItem.fileHandle);
+                // Combine in sorted order
+                const sortedUniqueAddrs = [];
+                if (largestAddrItem) {
+                    sortedUniqueAddrs.push(largestAddrItem);
                 }
-                remainingItems.forEach(item => {
-                    finalFiles.push(item.fileHandle);
+                remainingUnique.forEach(item => {
+                    sortedUniqueAddrs.push(item);
+                });
+
+                sortedUniqueAddrs.forEach(addrObj => {
+                    addrObj.items.forEach(item => {
+                        finalFiles.push(item.fileHandle);
+                    });
                 });
             }
 
@@ -6707,6 +6762,7 @@ function launchRunMode(runMode) {
 }
 
 async function runZoomSequenceBatch() {
+    const mySessionId = ++activeLoadSessionId;
     const zoomLevels = JSON.parse(localStorage.getItem('zoomSequenceLevels') || '[18,19,20,21]');
     const delayMs = parseInt(localStorage.getItem('delay') || '1500') || 1500;
 
@@ -6718,6 +6774,9 @@ async function runZoomSequenceBatch() {
 
     for (let i = 0; i < buildingQueue.length; i++) {
         if (batchStatus === 'STOPPED') break;
+        while (batchStatus === 'PAUSED') await sleep(400);
+        if (batchStatus === 'STOPPED') break;
+        if (mySessionId !== activeLoadSessionId) return;
 
         const bKey = buildingQueue[i];
         const idx = bKey.indexOf('_');
@@ -6727,6 +6786,9 @@ async function runZoomSequenceBatch() {
         // Use only the first address of each building group as representative
         for (const addr of addrs) {
             if (batchStatus === 'STOPPED') break;
+            while (batchStatus === 'PAUSED') await sleep(400);
+            if (batchStatus === 'STOPPED') break;
+            if (mySessionId !== activeLoadSessionId) return;
 
             currentPreviewAddr = addr;
 
@@ -6738,6 +6800,7 @@ async function runZoomSequenceBatch() {
             if (!matchedOffset) {
                 try {
                     const tempCoords = await geocodeAddress(addr);
+                    if (mySessionId !== activeLoadSessionId) return;
                     const closest = findClosestCalibratedOffset(tempCoords.lon, tempCoords.lat);
                     if (closest) matchedOffset = closest.offset;
                 } catch(e) {}
@@ -6758,7 +6821,9 @@ async function runZoomSequenceBatch() {
             clearOverlays();
             try {
                 const coords = await geocodeAddress(addr);
+                if (mySessionId !== activeLoadSessionId) return;
                 const features = await getParcelBoundary(coords.lon, coords.lat, coords._features, coords._fallbackAddr || addr);
+                if (mySessionId !== activeLoadSessionId) return;
                 const geometries = [];
                 (features || []).forEach(f => {
                     if (f.geometry) {
@@ -6777,18 +6842,36 @@ async function runZoomSequenceBatch() {
                 // For each zoom level, set zoom, wait, then capture
                 for (const zl of zoomLevels) {
                     if (batchStatus === 'STOPPED') break;
+                    while (batchStatus === 'PAUSED') await sleep(400);
+                    if (batchStatus === 'STOPPED') break;
+                    if (mySessionId !== activeLoadSessionId) return;
 
                     await centerOnGeometriesAndWait(zl);
+                    if (mySessionId !== activeLoadSessionId) return;
+
+                    // Set map label - 3 lines for zoom sequence
+                    const labelEl = document.getElementById('map-label');
+                    const labelLines = splitAddress(addr);
+                    labelEl.style.display = 'block';
+                    labelEl.innerHTML = `
+                        <div style="font-size: 14px; color: var(--accent); margin-bottom: 4px;">${bKey}</div>
+                        <div style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;">${labelLines[0]}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #ffffff;">${labelLines[1]} (줌${zl})</div>
+                    `;
+
                     await sleep(delayMs);
+                    if (mySessionId !== activeLoadSessionId) return;
 
                     redrawCached();
                     await sleep(100);
+                    if (mySessionId !== activeLoadSessionId) return;
 
                     const cleanAddr = addr.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_-]/g, '');
                     const filename = `${bKey}_${cleanAddr}_줌${zl}.png`;
 
                     showLog(`[줌연속촬영] ${addr} / 줌${zl} 캡처 중...`, 'info');
                     const ok = await captureMap(filename);
+                    if (mySessionId !== activeLoadSessionId) return;
                     if (ok) {
                         showLog(`✓ 줌${zl} 캡처 완료: ${filename}`, 'success');
                         doneTotal++;
