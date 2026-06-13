@@ -432,7 +432,7 @@ const EMBEDDED_OFFSETS = {
         "y": 17,
         "lon": 128.61047176965928,
         "lat": 35.913443033595144,
-        "timestamp": 1780920930055
+        "timestamp": 1781325709786
     },
     "대구광역시 북구 검단동 512-3": {
         "x": -12,
@@ -4862,11 +4862,45 @@ function getCleanAddressLabel(addr) {
 function splitAddress(addr) {
     if (!addr) return ['', ''];
     
+    let targetAddr = addr.trim();
+    
+    // 약식 주소(예: "검단동 495")인 경우 더 긴 법정 지번 주소로 자동 환원
+    const hasProvinceOrCity = /(?:시|도|구|군)\s+/.test(targetAddr);
+    if (!hasProvinceOrCity) {
+        let foundFull = null;
+        // 1. buildingGroups 검색
+        for (const bKey in buildingGroups) {
+            const addrs = buildingGroups[bKey] || [];
+            for (const full of addrs) {
+                if (full.includes(targetAddr) && full.length > targetAddr.length) {
+                    foundFull = full;
+                    break;
+                }
+            }
+            if (foundFull) break;
+        }
+        
+        // 2. 캐시 검색
+        if (!foundFull) {
+            const cache = getParcelCache();
+            for (const full in cache) {
+                if (full.includes(targetAddr) && full.length > targetAddr.length) {
+                    foundFull = full;
+                    break;
+                }
+            }
+        }
+        
+        if (foundFull) {
+            targetAddr = foundFull;
+        }
+    }
+
     // Remove "산 " temporarily to parse, then restore
-    const isSan = /(?:^|\s)산\s+(\d+)/.test(addr);
-    let cleanAddr = addr;
+    const isSan = /(?:^|\s)산\s+(\d+)/.test(targetAddr);
+    let cleanAddr = targetAddr;
     if (isSan) {
-        cleanAddr = addr.replace(/(?:^|\s)산\s+/, ' ');
+        cleanAddr = targetAddr.replace(/(?:^|\s)산\s+/, ' ');
     }
     
     const parsed = parseKoreanAddr(cleanAddr);
@@ -4880,7 +4914,7 @@ function splitAddress(addr) {
     }
     
     // Fallback
-    const parts = addr.trim().split(/\s+/);
+    const parts = targetAddr.split(/\s+/);
     let splitIdx = 2;
     if (parts.length > 3 && (parts[2].endsWith('시') || parts[2].endsWith('군') || parts[2].endsWith('구'))) {
         splitIdx = 3;
