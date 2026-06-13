@@ -229,10 +229,9 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <h2 class="ct">주소 업로드</h2>
         </div>
         <div class="row" style="gap: 6px;">
-            <button class="btn" id="btn-open-editor" title="주소 직접 입력 및 편집" style="flex: 0 0 90px; padding: 8px 6px; font-weight: 600; font-size: 12.5px; height: 42px; background: linear-gradient(135deg, #1d3557, #1a2c47); border: 1px solid #3d8bff; color: #7ec0ff;">주소 직접<br>편집</button>
-            <div id="dropzone" onclick="document.getElementById('file-input').click()" style="flex: 1; height: 42px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3d8bff; border-radius: 8px; background: rgba(61,139,255,0.08); cursor: pointer; transition: all .2s; padding: 0 8px; gap: 6px;">
+            <div id="dropzone" onclick="document.getElementById('file-input').click()" style="flex: 1; min-width: 0; height: 42px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3d8bff; border-radius: 8px; background: rgba(61,139,255,0.08); cursor: pointer; transition: all .2s; padding: 0 8px; gap: 6px;">
                 <span style="font-size: 18px;">📂</span>
-                <span style="font-size: 14px; font-weight: 700; color: #7ec0ff;">엑셀 업로드</span>
+                <span style="font-size: 14px; font-weight: 700; color: #7ec0ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">엑셀 업로드</span>
                 <!-- JS 에러 방지를 위해 숨김 처리된 텍스트 홀더 -->
                 <div style="display: none;">
                     <div class="dz-icon"></div>
@@ -240,6 +239,10 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
                     <div class="dz-sub"></div>
                 </div>
             </div>
+            <button class="btn" id="btn-open-editor" title="주소 직접 입력 및 편집" style="flex: 1; min-width: 0; padding: 8px 6px; font-weight: 700; font-size: 14px; height: 42px; background: linear-gradient(135deg, #1d3557, #1a2c47); border: 1px solid #3d8bff; color: #7ec0ff; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span style="font-size: 18px;">⌨️</span>
+                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">주소 직접 편집</span>
+            </button>
         </div>
         <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
         <div class="fi" id="fi">
@@ -339,8 +342,8 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
                 <thead>
                     <tr style="background:rgba(255,255,255,0.05); border-bottom:1.5px solid var(--border);">
                         <th style="padding:10px; width:50px; text-align:center;">선택</th>
-                        <th style="padding:10px; width:180px;">건물용도 (예: 공장, 변전소)</th>
-                        <th style="padding:10px; width:150px;">건물번호 (예: F001, 1)</th>
+                        <th style="padding:10px; width:180px;">건물용도 (선택)</th>
+                        <th style="padding:10px; width:150px;">건물번호 (예: S001, 1)</th>
                         <th style="padding:10px;">주소 (지번 주소)</th>
                     </tr>
                 </thead>
@@ -6259,9 +6262,28 @@ function addEditorRow(usage = '', bNo = '', addr = '') {
     const tbody = document.getElementById('editor-tbody');
     const tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+    
+    // 6가지 기본 옵션
+    const standardUsages = ['변전소', '사옥', '사택', '발전소', '철탑', '기타'];
+    let optionsHtml = '';
+    
+    const trimmedUsage = usage.trim();
+    // 6가지 기본 옵션에 없는 경우 custom option으로 추가
+    const isCustom = trimmedUsage && !standardUsages.includes(trimmedUsage);
+    const usagesToRender = isCustom ? [trimmedUsage, ...standardUsages] : standardUsages;
+    
+    usagesToRender.forEach(u => {
+        const isSelected = (trimmedUsage === u) ? 'selected' : '';
+        optionsHtml += `<option value="${escapeHtml(u)}" ${isSelected}>${escapeHtml(u)}</option>`;
+    });
+
     tr.innerHTML = `
         <td style="padding:8px; text-align:center;"><input type="checkbox" class="editor-row-chk"></td>
-        <td contenteditable="true" style="padding:8px; outline:none; background:rgba(255,255,255,0.02); min-width:140px; color:#ffffff;">${escapeHtml(usage)}</td>
+        <td style="padding:8px;">
+            <select class="editor-row-usage" style="width:100%; background:var(--input); border:1px solid var(--border); border-radius:4px; padding:6px; color:#ffffff; font-size:13px; outline:none;">
+                ${optionsHtml}
+            </select>
+        </td>
         <td contenteditable="true" style="padding:8px; outline:none; background:rgba(255,255,255,0.02); min-width:110px; color:#ffffff;">${escapeHtml(bNo)}</td>
         <td contenteditable="true" style="padding:8px; outline:none; background:rgba(255,255,255,0.02); color:#ffffff;">${escapeHtml(addr)}</td>
     `;
@@ -6286,9 +6308,9 @@ function loadSampleEditorRows() {
     const tbody = document.getElementById('editor-tbody');
     tbody.innerHTML = '';
     const samples = [
-        { usage: '공장', bNo: 'F001', addr: '경기도 화성시 팔탄면 구장리 123-1' },
-        { usage: '공장', bNo: 'F001', addr: '경기도 화성시 팔탄면 구장리 123-2' },
-        { usage: '창고', bNo: 'W002', addr: '경기도 화성시 팔탄면 고주리 456-1' }
+        { usage: '변전소', bNo: 'S001', addr: '경기도 화성시 팔탄면 구장리 123-1' },
+        { usage: '변전소', bNo: 'S001', addr: '경기도 화성시 팔탄면 구장리 123-2' },
+        { usage: '사옥', bNo: 'B002', addr: '경기도 화성시 팔탄면 고주리 456-1' }
     ];
     samples.forEach(s => addEditorRow(s.usage, s.bNo, s.addr));
 }
@@ -6307,7 +6329,8 @@ function applyEditorData() {
     trs.forEach(tr => {
         const tds = tr.querySelectorAll('td');
         if (tds.length >= 4) {
-            const usage = tds[1].textContent.trim();
+            const selectEl = tds[1].querySelector('select');
+            const usage = selectEl ? selectEl.value.trim() : '';
             const bNo = tds[2].textContent.trim();
             const addr = tds[3].textContent.trim();
             if (bNo && addr) {
