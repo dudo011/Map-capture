@@ -229,7 +229,7 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
             <h2 class="ct">주소 업로드</h2>
         </div>
         <div class="row" style="gap: 6px;">
-            <button class="btn" id="btn-tpl" title="샘플 엑셀 다운로드" style="flex: 0 0 90px; padding: 8px 6px; font-weight: 600; font-size: 12.5px; height: 42px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: var(--txt2);">양식<br>다운로드</button>
+            <button class="btn" id="btn-open-editor" title="주소 직접 입력 및 편집" style="flex: 0 0 90px; padding: 8px 6px; font-weight: 600; font-size: 12.5px; height: 42px; background: linear-gradient(135deg, #1d3557, #1a2c47); border: 1px solid #3d8bff; color: #7ec0ff;">주소 직접<br>편집</button>
             <div id="dropzone" onclick="document.getElementById('file-input').click()" style="flex: 1; height: 42px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3d8bff; border-radius: 8px; background: rgba(61,139,255,0.08); cursor: pointer; transition: all .2s; padding: 0 8px; gap: 6px;">
                 <span style="font-size: 18px;">📂</span>
                 <span style="font-size: 14px; font-weight: 700; color: #7ec0ff;">엑셀 업로드</span>
@@ -302,6 +302,66 @@ select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='htt
     <div style="font-size:18px;font-weight:600;color:var(--txt);">지도를 저장할 폴더 권한 승인이 필요합니다</div>
     <div style="font-size:13px;color:var(--txt2);max-width:320px;text-align:center;line-height:1.5;">지도를 선택하신 폴더에 직접 저장하기 위해 브라우저의 파일 쓰기 권한 승인이 필요합니다. 아래 버튼을 눌러 승인해 주세요.</div>
     <button class="btn bp" id="btn-grant-perm" style="padding:10px 20px;font-size:13px;">권한 승인하기</button>
+</div>
+
+<!-- DIRECT ADDRESS EDITOR OVERLAY -->
+<div id="editor-ov" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,12,26,0.88);z-index:15000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
+    <style>
+    #editor-table th {
+        font-weight: 600;
+        color: var(--txt);
+        border-bottom: 1.5px solid var(--border);
+    }
+    #editor-table td[contenteditable="true"] {
+        transition: all 0.2s;
+    }
+    #editor-table td[contenteditable="true"]:focus {
+        background: rgba(61, 139, 255, 0.08) !important;
+        box-shadow: inset 0 0 0 1px var(--accent);
+    }
+    #editor-table td[contenteditable="true"]:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+    </style>
+    <div style="background:rgba(10,18,42,0.98); border:1.5px solid var(--accent); border-radius:14px; padding:24px; width:80%; max-width:850px; box-shadow:0 12px 36px rgba(0,0,0,0.6); display:flex; flex-direction:column; gap:16px; backdrop-filter:blur(10px); color:var(--txt);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+            <h3 style="margin:0; font-size:18px; color:#ffffff; display:flex; align-items:center; gap:8px;">⌨️ 주소 직접 편집기</h3>
+            <button class="btn sm" id="btn-close-editor" style="background:transparent; border:none; font-size:18px; color:var(--txt2); cursor:pointer;">✕</button>
+        </div>
+        <div style="font-size:13px; color:var(--txt2); line-height:1.5; margin-bottom:4px;">
+            * 각 행을 클릭하여 내용을 직접 입력하거나 수정할 수 있습니다.<br>
+            * 용도 및 번호가 같은 주소들은 하나의 통합지도로 묶여 함께 처리됩니다.
+        </div>
+        
+        <!-- Grid Table Container -->
+        <div style="flex:1; max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.2);">
+            <table id="editor-table" style="width:100%; border-collapse:collapse; font-size:13.5px; text-align:left;">
+                <thead>
+                    <tr style="background:rgba(255,255,255,0.05); border-bottom:1.5px solid var(--border);">
+                        <th style="padding:10px; width:50px; text-align:center;">선택</th>
+                        <th style="padding:10px; width:180px;">건물용도 (예: 공장, 변전소)</th>
+                        <th style="padding:10px; width:150px;">건물번호 (예: F001, 1)</th>
+                        <th style="padding:10px;">주소 (지번 주소)</th>
+                    </tr>
+                </thead>
+                <tbody id="editor-tbody">
+                    <!-- Dynamic rows will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+            <div style="display:flex; gap:8px;">
+                <button class="btn bg sm" id="btn-editor-add-row" style="padding:8px 14px; font-weight:700;">➕ 행 추가</button>
+                <button class="btn bg sm" id="btn-editor-del-row" style="padding:8px 14px; font-weight:700; color:#ff4444; border-color:rgba(255,68,68,0.4);">❌ 선택 삭제</button>
+                <button class="btn bg sm" id="btn-editor-load-sample" style="padding:8px 14px; font-weight:700; color:#7ec0ff; border-color:rgba(61,139,255,0.4);">📊 샘플 로드</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn bg sm" id="btn-editor-clear" style="padding:8px 14px; font-weight:700;">초기화</button>
+                <button class="btn bp sm" id="btn-editor-apply" style="padding:8px 18px; font-weight:700; font-size:14px; background:var(--accent); color:#ffffff; box-shadow:0 0 15px rgba(61,139,255,0.3);">💾 작업 바로 시작</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -6166,20 +6226,172 @@ function handleFile(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// 샘플 템플릿 다운로드
-document.getElementById('btn-tpl').addEventListener('click', () => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([
-        ['건물용도','건물번호','주소'],
-        ['공장','F001','경기도 화성시 팔탄면 구장리 123-1'],
-        ['공장','F001','경기도 화성시 팔탄면 구장리 123-2'],
-        ['창고','W002','경기도 화성시 팔탄면 고주리 456-1'],
-    ]);
-    ws['!cols'] = [{wch:12},{wch:12},{wch:42}];
-    XLSX.utils.book_append_sheet(wb, ws, '주소목록');
-    XLSX.writeFile(wb, '지적캡처_양식.xlsx');
-    showLog('샘플 양식 다운로드됨', 'success');
+// 주소 직접 편집기 모달 기능 구현
+function openEditorModal() {
+    const tbody = document.getElementById('editor-tbody');
+    tbody.innerHTML = '';
+
+    // Reconstruct list of rows from current buildingQueue
+    const rows = [];
+    buildingQueue.forEach(bKey => {
+        const usage = buildingUsages[bKey] || '';
+        const idx = bKey.indexOf('_');
+        const bNo = idx !== -1 ? bKey.substring(idx + 1) : bKey;
+        const addrs = buildingGroups[bKey] || [];
+        addrs.forEach(addr => {
+            rows.push({ usage, bNo, addr });
+        });
+    });
+
+    if (rows.length > 0) {
+        rows.forEach(r => addEditorRow(r.usage, r.bNo, r.addr));
+    } else {
+        // Add 3 empty rows by default
+        for (let i = 0; i < 3; i++) {
+            addEditorRow('', '', '');
+        }
+    }
+
+    document.getElementById('editor-ov').style.display = 'flex';
+}
+
+function addEditorRow(usage = '', bNo = '', addr = '') {
+    const tbody = document.getElementById('editor-tbody');
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+    tr.innerHTML = `
+        <td style="padding:8px; text-align:center;"><input type="checkbox" class="editor-row-chk"></td>
+        <td contenteditable="true" style="padding:8px; outline:none; background:rgba(255,255,255,0.02); min-width:140px; color:#ffffff;">${escapeHtml(usage)}</td>
+        <td contenteditable="true" style="padding:8px; outline:none; background:rgba(255,255,255,0.02); min-width:110px; color:#ffffff;">${escapeHtml(bNo)}</td>
+        <td contenteditable="true" style="padding:8px; outline:none; background:rgba(255,255,255,0.02); color:#ffffff;">${escapeHtml(addr)}</td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function deleteSelectedEditorRows() {
+    const tbody = document.getElementById('editor-tbody');
+    const checkboxes = tbody.querySelectorAll('.editor-row-chk:checked');
+    checkboxes.forEach(chk => {
+        const tr = chk.closest('tr');
+        if (tr) tr.remove();
+    });
+}
+
+function loadSampleEditorRows() {
+    const tbody = document.getElementById('editor-tbody');
+    tbody.innerHTML = '';
+    const samples = [
+        { usage: '공장', bNo: 'F001', addr: '경기도 화성시 팔탄면 구장리 123-1' },
+        { usage: '공장', bNo: 'F001', addr: '경기도 화성시 팔탄면 구장리 123-2' },
+        { usage: '창고', bNo: 'W002', addr: '경기도 화성시 팔탄면 고주리 456-1' }
+    ];
+    samples.forEach(s => addEditorRow(s.usage, s.bNo, s.addr));
+}
+
+function clearEditorRows() {
+    const tbody = document.getElementById('editor-tbody');
+    tbody.innerHTML = '';
+    addEditorRow('', '', '');
+}
+
+function applyEditorData() {
+    const tbody = document.getElementById('editor-tbody');
+    const trs = tbody.querySelectorAll('tr');
+    
+    const rows = [];
+    trs.forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 4) {
+            const usage = tds[1].textContent.trim();
+            const bNo = tds[2].textContent.trim();
+            const addr = tds[3].textContent.trim();
+            if (bNo && addr) {
+                rows.push({ usage, bNo, addr });
+            }
+        }
+    });
+
+    if (rows.length === 0) {
+        alert('입력된 데이터가 없거나 필수 값(건물번호, 주소)이 빠져 있습니다.');
+        return;
+    }
+
+    buildingGroups = {};
+    buildingUsages = {};
+    buildingQueue = [];
+    bIdxMap = {};
+    doneCount = 0;
+    failCount = 0;
+    curIdx = 0;
+
+    rows.forEach(r => {
+        const usage = r.usage;
+        const bNo = r.bNo;
+        const addr = normalizeAddress(r.addr);
+        const bKey = usage ? `${usage}_${bNo}` : bNo;
+        if (!buildingGroups[bKey]) {
+            bIdxMap[bKey] = buildingQueue.length;
+            buildingGroups[bKey] = [];
+            buildingUsages[bKey] = usage;
+            buildingQueue.push(bKey);
+        }
+        if (!buildingGroups[bKey].includes(addr)) {
+            buildingGroups[bKey].push(addr);
+        }
+    });
+
+    totalCount = buildingQueue.length;
+    
+    // Save to localStorage
+    localStorage.setItem('buildingQueue', JSON.stringify(buildingQueue));
+    localStorage.setItem('buildingGroups', JSON.stringify(buildingGroups));
+    localStorage.setItem('buildingUsages', JSON.stringify(buildingUsages));
+
+    // Show upload stats
+    const fi = document.getElementById('fi');
+    if (fi) {
+        fi.classList.add('show');
+        document.getElementById('fi-nm').textContent = '직접 입력한 데이터';
+        document.getElementById('fi-ct').textContent = `${totalCount}개 건물 / ${rows.length}개 주소`;
+    }
+    
+    const dz = document.getElementById('dropzone');
+    if (dz) {
+        dz.classList.add('ok');
+        dz.querySelector('.dz-icon').textContent = '📝';
+        dz.querySelector('.dz-txt').textContent  = '직접 편집된 데이터';
+        dz.querySelector('.dz-sub').textContent  = `${totalCount}개 건물 로드됨`;
+    }
+
+    if (naverMap) {
+        document.getElementById('btn-start-combined').disabled = false;
+        document.getElementById('btn-start-individual').disabled = false;
+        document.getElementById('btn-zoom-sequence').disabled = false;
+    }
+
+    updateStats();
+    renderList();
+
+    // Close editor modal
+    document.getElementById('editor-ov').style.display = 'none';
+    showLog(`직접 편집 완료: ${totalCount}개 건물 적용됨`, 'success');
+}
+
+// 주소 직접 편집기 모달 이벤트 바인딩
+document.getElementById('btn-open-editor').addEventListener('click', openEditorModal);
+document.getElementById('btn-close-editor').addEventListener('click', () => {
+    document.getElementById('editor-ov').style.display = 'none';
 });
+document.getElementById('btn-editor-add-row').addEventListener('click', () => addEditorRow('', '', ''));
+document.getElementById('btn-editor-del-row').addEventListener('click', deleteSelectedEditorRows);
+document.getElementById('btn-editor-load-sample').addEventListener('click', loadSampleEditorRows);
+document.getElementById('btn-editor-clear').addEventListener('click', clearEditorRows);
+document.getElementById('btn-editor-apply').addEventListener('click', applyEditorData);
 
 // 시작/일시정지/중지
 // 시작/일시정지/중지
